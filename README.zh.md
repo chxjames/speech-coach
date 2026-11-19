@@ -10,10 +10,10 @@
 
 | | 是什么 | 给谁用 |
 |---|---|---|
-| **网页版**（`web/`） | 就是上面那个页面。拖一个文件进去，出分数，什么都不上传。 | 任何人，电脑或手机都行 |
+| **网页版**（`docs/`） | 就是上面那个页面。拖一个文件进去，出分数，什么都不上传。 | 任何人，电脑或手机都行 |
 | **MCP server**（`mcp/`） | 给 Claude Code、Codex 这类 MCP 客户端用的工具，让 agent 帮你分析视频 | 习惯在终端里干活的人 |
 
-![分析一段两分钟演讲后的评分卡](web/docs/screenshot-zh.png)
+![分析一段两分钟演讲后的评分卡](docs/screenshot-zh.png)
 
 右上角的按钮可以在中文和英文之间切换，选择会被记住。
 
@@ -169,15 +169,15 @@ GitHub Pages 不能自定义 `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedd
 ## 部署一份自己的
 
 1. 把这个仓库推到（或 fork 成）你自己的 GitHub 仓库。
-2. **Settings → Pages → Source 选 Deploy from a branch**，分支 `main`，目录 **`/web`**。
+2. **Settings → Pages → Source 选 Deploy from a branch**，分支 `main`，目录 **`/docs`**。
 3. 打开 `https://<用户名>.github.io/<仓库名>/`。
 
-`web/.nojekyll` 已经在了，`web/js/` 目录会原样发布。
+`docs/.nojekyll` 已经在了，`docs/js/` 目录会原样发布。
 
 ## 文件结构
 
 ```
-web/
+docs/
   index.html        页面骨架
   app.css           样式（深浅色自适应、手机布局）
   js/audio.js       解码任意视频 → 单声道 16 kHz、分块

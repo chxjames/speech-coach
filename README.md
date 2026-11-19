@@ -10,10 +10,10 @@ Two ways in, one engine:
 
 | | What it is | Who it is for |
 |---|---|---|
-| **Web app** (`web/`) | The page above. Drop a file, get a score. Nothing is uploaded. | Anyone, on a laptop or a phone |
+| **Web app** (`docs/`) | The page above. Drop a file, get a score. Nothing is uploaded. | Anyone, on a laptop or a phone |
 | **MCP server** (`mcp/`) | A tool for Claude Code, Codex and other MCP clients, so an agent can score a video for you | People who live in a terminal |
 
-![The score card after analysing a 2-minute talk](web/docs/screenshot-en.png)
+![The score card after analysing a 2-minute talk](docs/screenshot-en.png)
 
 The interface switches between English and Chinese with the button in the top-right corner; the choice is remembered.
 
@@ -182,15 +182,15 @@ Models are fetched from the Hugging Face CDN on first use and cached by the brow
 ## Deploy your own copy
 
 1. Fork or push this repository to GitHub.
-2. **Settings → Pages → Source: Deploy from a branch**, branch `main`, folder **`/web`**.
+2. **Settings → Pages → Source: Deploy from a branch**, branch `main`, folder **`/docs`**.
 3. Open `https://<user>.github.io/<repo>/`.
 
-`web/.nojekyll` is already present, so the `web/js/` folder is served as-is.
+`docs/.nojekyll` is already present, so the `docs/js/` folder is served as-is.
 
 ## Project layout
 
 ```
-web/
+docs/
   index.html          page shell
   app.css             styles (light/dark, mobile)
   js/audio.js         decode any video → mono 16 kHz, chunking
