@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>演讲体检 · Speech Coach</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>演讲体检</h1>
+  <p class="sub">拖一个演讲视频进来，在浏览器里算出语速、停顿、音高、句尾、软词密度和画面分。<strong>视频不会离开你的电脑。</strong></p>
+</header>
+
+<main>
+  <section id="drop" class="drop">
+    <input type="file" id="file" accept="video/*,audio/*" hidden>
+    <p class="drop-title">把视频拖到这里，或 <button id="pick" class="link">选择文件</button></p>
+    <p class="hint">支持 mp4 / mov / webm / m4a，建议 3 分钟以内</p>
+  </section>
+
+  <section id="controls" class="panel hidden">
+    <div class="row">
+      <label>形态
+        <select id="profile">
+          <option value="camera">对镜头 / 网课</option>
+          <option value="stage">讲台站立</option>
+        </select>
+      </label>
+      <label>识别模型
+        <select id="model">
+          <option value="Xenova/whisper-small.en" selected>small.en（英文，约 250MB）</option>
+          <option value="Xenova/whisper-base.en">base.en（更快，吃字多）</option>
+          <option value="Xenova/whisper-small">small（多语言，中文用这个）</option>
+        </select>
+      </label>
+      <label>并行数
+        <select id="workers">
+          <option>1</option><option>2</option><option>3</option><option selected>4</option><option>6</option>
+        </select>
+      </label>
+      <button id="run" class="primary">开始分析</button>
+    </div>
+    <p class="hint" id="fileinfo"></p>
+  </section>
+
+  <section id="progress" class="panel hidden">
+    <div class="bar"><div id="barfill"></div></div>
+    <p id="status">准备中…</p>
+  </section>
+
+  <section id="result" class="hidden">
+    <div id="scorecard"></div>
+    <h2>逐句</h2>
+    <div class="tablewrap"><table id="segments"></table></div>
+    <h2>文字稿</h2>
+    <pre id="transcript"></pre>
+    <div class="row">
+      <button id="download" class="ghost">下载报告（.md）</button>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
