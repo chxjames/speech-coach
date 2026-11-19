@@ -49,6 +49,8 @@ pacing = clamp(max(0, rateScore + pauseScore − longPenalty), 0, W.pacing)
 ```
 
 `wpm` 是净语速 = 词数 ÷ 说话总时长（不含句子之间的停顿）。
+`rangeSt` 是全片 voiced 帧音高的 5%–95% 分位差（半音）：先做 3 帧中值平滑，再把相对上一个有效帧跳超过 7 半音的帧判为八度错误剔除。
+同一段 125 秒录像，浏览器版算出 10.4 半音、Python 版 10.7 半音，两边算的是同一件事。
 `longest` 是单句最长秒数，超过该档 `longMax` 开始扣，6 秒后扣满 3 分。
 
 ### 语调（prosody）
