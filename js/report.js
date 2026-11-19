@@ -75,7 +75,52 @@ export function buildReport({ file, s, video, scored, tips, words, transcript })
   L.push('```');
   L.push('');
   L.push(t('report.note'));
+
+  // 总结放最后：读完前面的表和逐句清单，这里只回答"所以呢、我该改什么"
+  L.push('');
+  L.push(t('sum.title'));
+  L.push('');
+  L.push(summaryLines(scored, tips, m));
   return L.join('\n');
+}
+
+// 一句话判断 + 最稳的一项 + 最该改的三件事 + "只改一件就改这个"
+function summaryLines(scored, tips, m) {
+  const d = scored.dims;
+  const total = scored.total;
+  const out = [];
+
+  const key = total >= 85 ? 'sum.verdict.high'
+    : total >= 70 ? 'sum.verdict.solid'
+    : total >= 55 ? 'sum.verdict.mid'
+    : 'sum.verdict.low';
+  out.push(`- ${t(key)}`);
+
+  const order = ['content', 'pacing', 'prosody', 'clarity', 'body', 'production'];
+  const share = order.map(k => ({ k, v: d[k].max ? d[k].got / d[k].max : 0 })).sort((a, b) => b.v - a.v);
+  if (share[0].v > 0.6) {
+    out.push(`- ${t('sum.keep', {
+      dim: t('dim.' + share[0].k),
+      got: d[share[0].k].got.toFixed(1),
+      max: d[share[0].k].max,
+    })}`);
+  }
+
+  if (tips.length) {
+    out.push(`- ${t('sum.fix')}`);
+    tips.slice(0, 3).forEach((tip, i) => out.push(`  ${i + 1}. ${t(tip.key, tip.vars)}`));
+    out.push(`- ${t('sum.one', { text: t(tips[0].key, tips[0].vars) })}`);
+  } else {
+    out.push(`- ${t('sum.nothing')}`);
+  }
+
+  out.push(`- ${t('sum.numbers', {
+    wpm: Math.round(m.wpm),
+    artic: Math.round(m.articWpm),
+    pause: m.pauseAvg.toFixed(1),
+    range: m.rangeSt != null ? m.rangeSt.toFixed(1) : '—',
+  })}`);
+  return out.join('\n');
 }
 
 export function download(filename, text) {
