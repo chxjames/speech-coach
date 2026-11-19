@@ -11,7 +11,7 @@
 | | 是什么 | 给谁用 |
 |---|---|---|
 | **网页版**（`docs/`） | 就是上面那个页面。拖一个文件进去，出分数，什么都不上传。 | 任何人，电脑或手机都行 |
-| **MCP server**（`mcp/`） | 给 Claude Code、Codex 这类 MCP 客户端用的工具，让 agent 帮你分析视频 | 习惯在终端里干活的人 |
+| **MCP server**（`mcp/`，[已发 npm](https://www.npmjs.com/package/speech-coach)） | 给 Claude Code、Codex 这类 MCP 客户端用的工具，让 agent 帮你分析视频 | 习惯在终端里干活的人 |
 
 ![分析一段两分钟演讲后的评分卡](docs/screenshot-zh.png)
 
@@ -48,6 +48,43 @@ python -m http.server 8792
 ```
 
 **直接双击 `index.html` 不行**：`file://` 协议下浏览器不肯启动做转写的 Web Worker。要么起本地服务，要么用线上地址。
+
+## 让 agent 帮你打分（MCP）
+
+MCP server 已经发到 npm：[`speech-coach`](https://www.npmjs.com/package/speech-coach)。不用克隆，不用编译，一行接上：
+
+```sh
+claude mcp add speech-coach -- npx -y speech-coach
+```
+
+任何支持 MCP 的客户端都能用，它走 stdio：
+
+```json
+{
+  "mcpServers": {
+    "speech-coach": { "command": "npx", "args": ["-y", "speech-coach"] }
+  }
+}
+```
+
+接上之后直接用中文说：
+
+> 帮我分析 ~/talks/彩排.mp4，按比赛、进阶档打分，告诉我最该改的一件事。
+
+agent 会调用 `analyze_speech`，拿回来的就是网页版能下载的那份 Markdown 报告。
+
+| 参数 | 默认值 | 含义 |
+|---|---|---|
+| `path` | — | 服务器所在机器上的视频路径 |
+| `scene` | `final` | `homework` 作业、`final` 期末、`contest` 比赛、`interview` 面试、`defense` 答辩、`pitch` 路演 |
+| `level` | `solid` | `starter` 入门、`solid` 进阶、`pro` 专业 |
+| `format` | `camera` | `camera` 对镜头、`stage` 讲台 |
+| `lang` | `en` | 报告语言：`en` 或 `zh` |
+| `content` | 72 | 你自己给内容与结构的 0–100 分 |
+| `composition` | 50 | 你自己给构图与灯光的 0–100 分 |
+| `model` | `whisper-base.en` | 任意 Transformers.js 能加载的 Whisper 模型 |
+
+第一次运行会把 Whisper 权重（`base.en` 约 80 MB）下载到 npm 缓存，之后直接复用。
 
 ## 它会看什么
 

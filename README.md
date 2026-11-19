@@ -11,7 +11,7 @@ Two ways in, one engine:
 | | What it is | Who it is for |
 |---|---|---|
 | **Web app** (`docs/`) | The page above. Drop a file, get a score. Nothing is uploaded. | Anyone, on a laptop or a phone |
-| **MCP server** (`mcp/`) | A tool for Claude Code, Codex and other MCP clients, so an agent can score a video for you | People who live in a terminal |
+| **MCP server** (`mcp/`, [on npm](https://www.npmjs.com/package/speech-coach)) | A tool for Claude Code, Codex and other MCP clients, so an agent can score a video for you | People who live in a terminal |
 
 ![The score card after analysing a 2-minute talk](docs/screenshot-en.png)
 
@@ -52,7 +52,44 @@ python -m http.server 8792
 Opening `index.html` by double-clicking will **not** work: under `file://` the browser refuses to start the
 Web Workers that do the transcription. Use the local server (or the hosted page).
 
-The interface is in Chinese; the report, this README and `SCORING.md` are bilingual.
+The interface switches between Chinese and English; every report, this README and `SCORING.md` are bilingual.
+
+## Use it from an agent (MCP)
+
+The MCP server is published on npm as [`speech-coach`](https://www.npmjs.com/package/speech-coach). No clone, no build:
+
+```sh
+claude mcp add speech-coach -- npx -y speech-coach
+```
+
+Any MCP client works — it speaks stdio:
+
+```json
+{
+  "mcpServers": {
+    "speech-coach": { "command": "npx", "args": ["-y", "speech-coach"] }
+  }
+}
+```
+
+Then ask in plain language:
+
+> Score ~/talks/rehearsal.mp4 as a competition talk at solid level, and tell me the one thing to fix.
+
+The agent calls `analyze_speech` and receives the same Markdown report the web page downloads.
+
+| Argument | Default | Meaning |
+|---|---|---|
+| `path` | — | a video file on the machine running the server |
+| `scene` | `final` | `homework`, `final`, `contest`, `interview`, `defense`, `pitch` |
+| `level` | `solid` | `starter`, `solid`, `pro` |
+| `format` | `camera` | `camera` (webcam) or `stage` (lectern) |
+| `lang` | `en` | language of the report: `en` or `zh` |
+| `content` | 72 | your own 0–100 score for content and structure |
+| `composition` | 50 | your own 0–100 score for framing and lighting |
+| `model` | `whisper-base.en` | any Whisper id Transformers.js can load |
+
+The first run downloads the Whisper weights (~80 MB for `base.en`) into the npm cache; later runs reuse them.
 
 ## What it measures
 
