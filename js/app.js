@@ -16,12 +16,30 @@ if (isMobile) {
   $('workers').value = '1';
 }
 
+// ---------- 场景：记住上次选的，并显示一句说明 ----------
+const SCENE_KEY = 'sc.scene';
+try {
+  const saved = localStorage.getItem(SCENE_KEY);
+  if (saved && $('scene').querySelector(`option[value="${saved}"]`)) $('scene').value = saved;
+} catch (e) { /* 隐私模式下 localStorage 可能不可用 */ }
+
+function paintSceneHint() {
+  $('scenehint').textContent = t('scene.hint.' + $('scene').value);
+}
+$('scene').onchange = () => {
+  try { localStorage.setItem(SCENE_KEY, $('scene').value); } catch (e) { /* ignore */ }
+  paintSceneHint();
+  if (state.scored) render();
+};
+paintSceneHint();
+
 // ---------- 语言 ----------
 $('lang').onclick = () => setLang(getLang() === 'zh' ? 'en' : 'zh');
 onLangChange(() => {
   if (lastStatus) {
     $('status').textContent = lastStatus.key ? t(lastStatus.key, lastStatus.vars) : lastStatus.text;
   }
+  paintSceneHint();
   if (state.scored) render();
   if (state.file) $('fileinfo').textContent = `${state.file.name} · ${(state.file.size / 1024 / 1024).toFixed(1)} MB`;
 });
@@ -121,8 +139,9 @@ const tick = () => new Promise(r => setTimeout(r, 30));
 function render() {
   const profile = $('profile').value;
   const level = $('level').value;
-  state.scored = score({ s: state.prosody.summary, video: state.video, profile, level, manual: state.manual });
-  state.tips = findings({ s: state.prosody.summary, video: state.video, scored: state.scored, level });
+  const scene = $('scene').value;
+  state.scored = score({ s: state.prosody.summary, video: state.video, profile, level, scene, manual: state.manual });
+  state.tips = findings({ s: state.prosody.summary, video: state.video, scored: state.scored, level, scene });
 
   $('result').classList.remove('hidden');
   renderScorecard();
@@ -151,7 +170,7 @@ function renderScorecard() {
           <div class="name"><span>${t('dim.' + k)}</span><span>${d.got.toFixed(1)} / ${d.max}</span></div>
           <div class="mini"><i style="width:${Math.round(d.got / d.max * 100)}%"></i></div>
           <div class="note">${notes[k]}</div>
-          ${k === 'content' ? `<input type="range" min="0" max="25" step="0.5" value="${state.manual.content ?? 18}" data-manual="content" style="width:100%;margin-top:8px">` : ''}
+          ${k === 'content' ? `<input type="range" min="0" max="${d.max}" step="0.5" value="${state.manual.content ?? Math.round(d.max * 0.72)}" data-manual="content" style="width:100%;margin-top:8px">` : ''}
           ${k === 'production' && sc.compBudget > 0 ? `<input type="range" min="0" max="${sc.compBudget}" step="0.5" value="${state.manual.composition ?? sc.compBudget / 2}" data-manual="composition" style="width:100%;margin-top:8px">` : ''}
         </div>`).join('')}
     </div>

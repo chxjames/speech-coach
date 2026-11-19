@@ -15,6 +15,7 @@ export function buildReport({ file, s, video, scored, tips, words, transcript })
   L.push('');
   L.push(t('report.total', {
     total: scored.total.toFixed(1),
+    scene: t('scene.' + (scored.scene || 'final')),
     profile: t('profile.' + scored.profile),
     level: t('level.' + scored.level),
   }));

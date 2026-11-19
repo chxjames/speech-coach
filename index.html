@@ -24,6 +24,16 @@
 
   <section id="controls" class="panel hidden">
     <div class="row">
+      <label><span data-i18n="label.scene">场景</span>
+        <select id="scene">
+          <option value="final" selected data-i18n="opt.scene.final">期末展示 / 汇报</option>
+          <option value="homework" data-i18n="opt.scene.homework">课堂作业 / 练习</option>
+          <option value="contest" data-i18n="opt.scene.contest">比赛（3MT 一类）</option>
+          <option value="interview" data-i18n="opt.scene.interview">面试 / 求职</option>
+          <option value="defense" data-i18n="opt.scene.defense">答辩 / 评审</option>
+          <option value="pitch" data-i18n="opt.scene.pitch">路演 / 推销</option>
+        </select>
+      </label>
       <label><span data-i18n="label.profile">形态</span>
         <select id="profile">
           <option value="camera" data-i18n="opt.profile.camera">对镜头 / 网课</option>
@@ -51,6 +61,7 @@
       </label>
       <button id="run" class="primary" data-i18n="run">开始分析</button>
     </div>
+    <p class="hint" id="scenehint"></p>
     <p class="hint" id="fileinfo"></p>
   </section>
 

@@ -12,8 +12,33 @@ const FILLERS = /\b(um+|uh+|erm|ah+|hmm|like|you know|sort of|kind of|i mean|act
 export function analyzeProsody(samples, words) {
   const frames = pitchTrack(samples);
 
-  // 1) 按词间空隙切句
-  const segs = segmentByGaps(words, 0.45, 15);
+  // 丢掉超出音频长度的词：Whisper 在每块结尾偶尔会吐一个时间戳在音频之外的幻觉词，
+  // 留着会把最后一个停顿拉成二十几秒。
+  const totalSec = samples.length / SR;
+  words = words
+    .filter(w => w.start >= 0 && w.start < totalSec - 0.05)
+    .map(w => ({ ...w, end: Math.min(w.end == null ? w.start : w.end, totalSec) }));
+
+  // 静音阈值：这台机器录的音底噪很低（p10 ≈ 0.0004），人声大多在 0.01 以上。
+  // 取 p10×3 与 p90×1.2% 的较大者——太高会把轻声字算成静音（语速虚高），
+  // 太低会把换气声算成说话。
+  const es = frames.map(f => f.e || 0).sort((a, b) => a - b);
+  const p10e = es[Math.floor(es.length * 0.1)] || 0;
+  const p90e = es[Math.floor(es.length * 0.9)] || 0;
+  const silThr = Math.max(p10e * 3, p90e * 0.012, 0.0008);
+  const silenceRatio = (a, b) => {
+    if (b <= a) return 1;
+    let n = 0, silent = 0;
+    for (const f of frames) {
+      if (f.t < a || f.t > b) continue;
+      n++;
+      if ((f.e || 0) < silThr) silent++;
+    }
+    return n ? silent / n : 1;
+  };
+
+  // 1) 按词间空隙切句，但只在空隙真的安静时才断开
+  const segs = segmentByGaps(words, 0.45, 15, silenceRatio);
 
   // 2) 逐句算
   const out = [];
@@ -50,7 +75,15 @@ export function analyzeProsody(samples, words) {
     if (g >= 0.3) pauses.push({ at: out[i - 1].end, dur: g });
   }
 
-  const speechSec = out.reduce((a, s) => a + Math.max(0, s.dur - 0.05), 0);
+  // 说话时长按能量算：词级时间戳会漏字，能量不会。
+  const spanStart = out.length ? out[0].start : 0;
+  const spanEnd = out.length ? out[out.length - 1].end : 0;
+  let speechFrames = 0;
+  for (const f of frames) {
+    if (f.t >= spanStart && f.t <= spanEnd && (f.e || 0) >= silThr) speechFrames++;
+  }
+  const speechSec = speechFrames * (HOP / SR);
+  const spanSec = out.length > 1 ? out[out.length - 1].end - out[0].start : speechSec;
   const wordsTotal = out.reduce((a, s) => a + s.words, 0);
   const voicedSec = out.reduce((a, s) => a + s.voicedSec, 0);
   const allText = out.map(s => s.text).join(' ');
@@ -77,12 +110,17 @@ export function analyzeProsody(samples, words) {
       segments: out.length,
       words: wordsTotal,
       speechSec,
+      spanSec,
       voicedSec,
       pauses: pauses.length,
       pauseAvg: pauses.length ? pauses.reduce((a, p) => a + p.dur, 0) / pauses.length : 0,
       pauseMax: pauses.length ? Math.max(...pauses.map(p => p.dur)) : 0,
-      wpm: speechSec > 0 ? wordsTotal / (speechSec / 60) : 0,
-      articWpm: voicedSec > 0 ? wordsTotal / (voicedSec / 60) : 0,
+      // 两个速率的定义分清楚，才能和文献/获奖者数据比：
+      //   净语速（wpm）= 总词数 ÷ 首词到末词的时长（含停顿）——HBR 那个 150 wpm 说的就是这个
+      //   发音速率（articWpm）= 总词数 ÷ 真正出声的时长（不含停顿）
+      // 早期版本把净语速也算成"不含停顿"，数字会偏高 20%，是错的。
+      wpm: spanSec > 1 ? wordsTotal / (spanSec / 60) : 0,
+      articWpm: speechSec > 0 ? wordsTotal / (speechSec / 60) : 0,
       medianPitch: medOfMedians,
       // 音域用全片 5%–95% 分位，比"单句最宽"稳，也更接近文献里的做法
       rangeSt: allSemis.length > 4
@@ -117,10 +155,10 @@ function pitchTrack(samples) {
   for (let i = 0; i + FRAME < samples.length; i += HOP, idx++) {
     const e = rmsList[idx];
     const t = (i + FRAME / 2) / SR;
-    if (e < energyFloor) { frames.push({ t, f0: null, st: null, voiced: false }); continue; }
+    if (e < energyFloor) { frames.push({ t, f0: null, st: null, voiced: false, e }); continue; }
 
     const { lag, conf } = bestLag(samples, i, minLag, maxLag);
-    if (lag && conf > 0.3) {
+    if (lag && conf >= 0.45) {
       const f0 = SR / lag;
       frames.push({ t, f0, st: 12 * Math.log2(f0 / 100), voiced: true, conf, e });
     } else {
@@ -143,25 +181,32 @@ function pitchTrack(samples) {
 }
 
 function bestLag(x, start, minLag, maxLag) {
-  // 归一化自相关；取"最长且够接近峰值"的 lag，避免倍频误差
+  // 归一化自相关，取峰值 lag（和 Python 版 measure.py 同一套做法）。
+  // 早期版本取"最长且 ≥0.88 峰值的 lag"，会在女声上系统性低八度——
+  // 2 倍周期的相关系数常能到峰值的 0.9，于是 260Hz 被判成 130Hz。
   const n = FRAME;
-  let peak = 0;
-  const corr = new Float32Array(maxLag + 1);
+  let peak = 0, peakLag = 0;
+  const corr = new Float32Array(maxLag + 2);
+  // 去直流：说话时帧内均值不为 0，留着会抬高长 lag 的相关
+  let mean = 0;
+  for (let i = 0; i < n; i++) mean += x[start + i];
+  mean /= n;
   for (let lag = minLag; lag <= maxLag; lag++) {
     let s = 0, e1 = 0, e2 = 0;
     for (let i = 0; i < n - lag; i++) {
-      const a = x[start + i], b = x[start + i + lag];
+      const a = x[start + i] - mean, b = x[start + i + lag] - mean;
       s += a * b; e1 += a * a; e2 += b * b;
     }
     const c = s / (Math.sqrt(e1 * e2) + 1e-9);
     corr[lag] = c;
-    if (c > peak) peak = c;
+    if (c > peak) { peak = c; peakLag = lag; }
   }
-  if (peak <= 0) return { lag: null, conf: 0 };
-  for (let lag = maxLag; lag >= minLag; lag--) {
-    if (corr[lag] >= peak * 0.88) return { lag, conf: corr[lag] };
-  }
-  return { lag: null, conf: peak };
+  if (peak <= 0 || !peakLag) return { lag: null, conf: 0 };
+  // 抛物线插值细化峰位，减少 1 个 lag 的量化误差
+  const a = corr[peakLag - 1] ?? peak, b = peak, c = corr[peakLag + 1] ?? peak;
+  const denom = a - 2 * b + c;
+  const shift = Math.abs(denom) > 1e-9 ? 0.5 * (a - c) / denom : 0;
+  return { lag: peakLag + shift, conf: peak };
 }
 
 // 句尾 0.6 秒的半音/秒斜率（用 voiced 帧做线性回归）
@@ -177,13 +222,19 @@ function finalSlope(semis, voiced, end) {
   return den > 0 ? num / den : null;
 }
 
-function segmentByGaps(words, gapSec, maxLen) {
+function segmentByGaps(words, gapSec, maxLen, silenceRatio = () => 1) {
   const segs = [];
   let cur = [];
   for (const w of words) {
-    if (cur.length && (w.start - cur[cur.length - 1].end > gapSec || w.start - cur[0].start > maxLen)) {
-      segs.push({ words: cur, start: cur[0].start, end: cur[cur.length - 1].end });
-      cur = [];
+    const prev = cur[cur.length - 1];
+    if (cur.length) {
+      const gap = w.start - prev.end;
+      const silent = gap > gapSec && silenceRatio(prev.end, w.start) >= 0.7;
+      const tooLong = w.start - cur[0].start > maxLen;
+      if (silent || tooLong) {
+        segs.push({ words: cur, start: cur[0].start, end: prev.end });
+        cur = [];
+      }
     }
     cur.push(w);
   }

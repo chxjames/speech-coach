@@ -76,9 +76,25 @@ competition standards:
 | 进阶 Solid | you can finish a talk and want to do it well | the default |
 | 专业 Pro | competition, pitch, conference | wider pitch range required, shorter pauses required, near-zero fillers |
 
-On one 125-second recording the same video scores **79.0 / 74.9 / 68.1** at the three levels.
-Every formula, the target values, and the paper each value comes from (Foulke 1968, Goldman-Eisler 1968,
-Laver 1994, Aoyama 2016, Tielen 1989, …) are in [SCORING.md](SCORING.md). That file also lists, honestly,
+## Scenes
+
+A 3-minute contest talk and a job interview are not judged the same way, so the tool also asks **what the
+talk is for**. The scene multiplies the six weights and overrides the targets that matter in that room:
+
+| Scene | Leans on | Overrides |
+|---|---|---|
+| Class assignment | clarity, body | slower pace, longer sentences forgiven, fillers forgiven |
+| Final presentation | content | shorter sentences, fewer fillers |
+| Competition (3MT-style) | expressiveness, body | calibrated on 12 3MT winners: 160 wpm, 0.70 s pauses, 10 s max sentence, 9.5-semitone range |
+| Job interview | clarity | 8 s max sentence, 0.8 fillers per 100 words — brevity over flourish |
+| Thesis defence | content ×1.35 | slower is fine (145 wpm), terminology allowed |
+| Pitch / demo | expressiveness ×1.2 | 0.60 s pauses, wide pitch range, almost no fillers |
+
+Scene, level and format are independent: **format** sets the base weights, **scene** bends them and moves
+the targets, **level** sets how forgiving those targets are.
+
+Every formula, the target values, and the paper or dataset each value comes from (Foulke 1968,
+Goldman-Eisler 1968, Laver 1994, Aoyama 2016, Tielen 1989, …) are in [SCORING.md](SCORING.md). That file also lists, honestly,
 the values that are my own estimates rather than published figures.
 
 ## How it works

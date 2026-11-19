@@ -2,7 +2,9 @@
 // 注意：每个 Worker 各持有一份模型（small 约 250MB），所以并行数不要开太大。
 import { t } from './i18n.js';
 
-import { chunkAudio } from './audio.js';
+import { chunkAudio, SR } from './audio.js';
+
+const OVERLAP = 2;   // 秒。接缝处多听 2 秒，避免一个词被切在两段中间（会让语速和停顿都失真）
 
 export async function transcribe(samples, {
   model = 'Xenova/whisper-small.en',
@@ -11,7 +13,14 @@ export async function transcribe(samples, {
   chunkSeconds = 30,
   onProgress = () => {},
 } = {}) {
-  const chunks = chunkAudio(samples, chunkSeconds);
+  const chunks = [];
+  const stride = Math.max(1, chunkSeconds - OVERLAP) * SR;
+  const size = Math.ceil(chunkSeconds * SR);
+  for (let off = 0; off < samples.length; off += stride) {
+    chunks.push({ offset: off / SR, samples: samples.slice(off, off + size) });
+    if (off + size >= samples.length) break;
+  }
+  if (!chunks.length) chunks.push({ offset: 0, samples });
   const n = Math.max(1, Math.min(workers, chunks.length));
   onProgress({ stage: 'load', done: 0, total: chunks.length, msg: t('progress.workers', { n }) });
 
@@ -84,18 +93,27 @@ export async function transcribe(samples, {
     words.push(...r.words);
     texts.push(r.text.trim());
   }
-  dedupeWords(words, chunkSeconds);
+  // 分块有 2 秒重叠，接缝处同一个词会被两段各听一次 → 按"归一化文本 + 0.5 秒时间桶"去重
+  dedupeWords(words);
 
   return { words, text: texts.join(' '), chunks };
 }
 
-// 分块的接缝处可能重复一个词，去掉时间上重叠且内容相同的相邻重复。
-function dedupeWords(words, chunkSeconds) {
+// 重叠区里的重复词：文本相同、起始时间靠近（相差不到 1 个时间桶）就只留一个。
+function dedupeWords(words) {
   words.sort((a, b) => a.start - b.start);
-  for (let i = words.length - 1; i > 0; i--) {
-    const a = words[i - 1], b = words[i];
-    if (!a.text || !b.text) continue;
-    const same = a.text.toLowerCase().replace(/[^\w']/g, '') === b.text.toLowerCase().replace(/[^\w']/g, '');
-    if (same && Math.abs(a.start - b.start) < 0.35) words.splice(i, 1);
+  const seen = new Set();
+  const out = [];
+  for (const w of words) {
+    const norm = (w.text || '').toLowerCase().replace(/[^\p{L}\p{N}']/gu, '');
+    if (!norm) { out.push(w); continue; }
+    const bucket = Math.round(w.start * 2); // 0.5s 一格
+    let dup = false;
+    for (let d = -1; d <= 1 && !dup; d++) if (seen.has(`${norm}@${bucket + d}`)) dup = true;
+    if (dup) continue;
+    seen.add(`${norm}@${bucket}`);
+    out.push(w);
   }
+  words.length = 0;
+  words.push(...out);
 }
