@@ -21,7 +21,7 @@ export function analyzeProsody(samples, words) {
     const fr = frames.filter(f => f.t >= s.start && f.t <= s.end);
     const voiced = fr.filter(f => f.voiced);
     const pitches = voiced.map(f => f.f0).sort((a, b) => a - b);
-    const semis = voiced.map(f => f.st);
+    const semis = voiced.map(f => f.st).filter(x => x != null).sort((x, y) => x - y);   // quantile 要求有序；null 是判为八度错误的帧
 
     const median = pitches.length ? pitches[Math.floor(pitches.length / 2)] : null;
     const p5 = semis.length ? quantile(semis, 0.05) : null;
@@ -41,6 +41,8 @@ export function analyzeProsody(samples, words) {
       db: energyDb(samples, s.start, s.end),
     });
   }
+
+  const allSemis = frames.filter(f => f.voiced && f.st != null).map(f => f.st).sort((a, b) => a - b);
 
   const pauses = [];
   for (let i = 1; i < out.length; i++) {
@@ -82,7 +84,10 @@ export function analyzeProsody(samples, words) {
       wpm: speechSec > 0 ? wordsTotal / (speechSec / 60) : 0,
       articWpm: voicedSec > 0 ? wordsTotal / (voicedSec / 60) : 0,
       medianPitch: medOfMedians,
-      rangeSt: out.map(s => s.rangeSt).filter(x => x != null).sort((a, b) => a - b).slice(-1)[0] ?? null,
+      // 音域用全片 5%–95% 分位，比"单句最宽"稳，也更接近文献里的做法
+      rangeSt: allSemis.length > 4
+        ? (quantile(allSemis, 0.95) - quantile(allSemis, 0.05))
+        : null,
       segSdSt: sdSt,
       finals: counts,
       fillers: fillers.length,
@@ -121,6 +126,18 @@ function pitchTrack(samples) {
     } else {
       frames.push({ t, f0: null, st: null, voiced: false, e });
     }
+  }
+  // 3 帧中值平滑，压掉单帧倍频错误（和 Python 版 analyze.js 对齐）
+  const voiced = frames.filter(f => f.voiced);
+  for (let i = 1; i < voiced.length - 1; i++) {
+    const w = [voiced[i - 1].st, voiced[i].st, voiced[i + 1].st].sort((x, y) => x - y);
+    if (Math.abs(voiced[i].st - w[1]) > 3) voiced[i].st = w[1];
+  }
+  // 相对上一个有效帧跳超过 7 半音的，判为八度错误，不参与音域统计
+  let prev = null;
+  for (const f of voiced) {
+    if (prev != null && Math.abs(f.st - prev) > 7) f.st = null;
+    else prev = f.st;
   }
   return frames;
 }

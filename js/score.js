@@ -10,21 +10,18 @@ export const PROFILES = {
 export const LEVELS = {
   // 入门：能讲完、有停顿、句子别太长。宽容度按 Foulke 1968（125–250 wpm 理解无损）
   starter: {
-    label: '入门',
     rate: [140, 55], pause: [0.9, 1.3], longMax: 16,
     range: [6.5, 4], sd: [2.0, 1.5], riseTol: 0.45,
     artic: [200, 80], filler: [3.0, 2.5], motion: 5,
   },
   // 进阶：目标等于"职业演讲者的平均"（150 wpm，HBR 2018 引 Missouri 研究）
   solid: {
-    label: '进阶',
     rate: [150, 45], pause: [1.2, 1.0], longMax: 13,
     range: [8.0, 4], sd: [2.8, 1.5], riseTol: 0.35,
     artic: [210, 65], filler: [1.8, 2.0], motion: 8,
   },
   // 专业：比赛/路演。音域和句间变化的要求往上抬（Journal of Voice 1993：受过训练者音域更大）
   pro: {
-    label: '专业',
     rate: [150, 38], pause: [1.4, 0.8], longMax: 11,
     range: [10.0, 4], sd: [3.5, 1.5], riseTol: 0.25,
     artic: [220, 55], filler: [1.0, 1.5], motion: 10,
@@ -67,12 +64,14 @@ export function score({ s, video, profile = 'camera', level = 'solid', manual = 
   // 制作：自动部分只算技术项（分辨率/码率/曝光），剩下的构图与灯光交给人
   const autoBudget = Math.min(12, W.production);
   const compBudget = W.production - autoBudget;
-  const px = (video?.width || 0) * (video?.height || 0);
-  const resScore = autoBudget / 3 * clamp(Math.sqrt(px) / 720, 0, 1);
+  // 读不出画面时（格式不支持、尺寸拿不到）不罚分：技术项按满分算，只留构图滑杆
+  const frameKnown = !!(video && video.width && video.height);
+  const px = frameKnown ? video.width * video.height : 0;
+  const resScore = frameKnown ? autoBudget / 3 * clamp(Math.sqrt(px) / 720, 0, 1) : autoBudget / 3;
   const kbps = video?.bitrateKbps ?? 0;
-  const bitScore = autoBudget / 3 * clamp(Math.pow(kbps / 2000, 0.6), 0, 1);
-  const luma = video?.lumaMedian ?? 120;
-  const expScore = autoBudget / 3 * clamp(Math.exp(-Math.pow((luma - 115) / 50, 2)), 0, 1);
+  const bitScore = frameKnown ? autoBudget / 3 * clamp(Math.pow(kbps / 2000, 0.6), 0, 1) : autoBudget / 3;
+  const luma = video?.lumaMedian ?? 115;
+  const expScore = frameKnown ? autoBudget / 3 * clamp(Math.exp(-Math.pow((luma - 115) / 50, 2)), 0, 1) : autoBudget / 3;
   const composition = manual.composition ?? compBudget * 0.5;
   const production = resScore + bitScore + expScore + composition;
 
@@ -83,43 +82,48 @@ export function score({ s, video, profile = 'camera', level = 'solid', manual = 
     prosody: { got: cap(prosody, W.prosody), max: W.prosody, parts: { rangeScore, sdScore, finalScore } },
     clarity: { got: cap(clarity, W.clarity), max: W.clarity, parts: { articScore, cleanScore } },
     body: { got: cap(body, W.body), max: W.body },
-    production: { got: cap(production, W.production), max: W.production, manual: compBudget > 0, parts: { resScore, bitScore, expScore, composition } },
+    production: { got: cap(production, W.production), max: W.production, manual: compBudget > 0, frameKnown, parts: { resScore, bitScore, expScore, composition } },
   };
 
   return { total: Object.values(dims).reduce((a, d) => a + d.got, 0), dims, profile, level, compBudget };
 }
 
-// 把差异换算成"你该改什么"，按丢分排序
+// 把差异换算成"你该改什么"，按丢分排序。
+// 只返回 key + vars，文案在 js/i18n.js 里（中英各一份），页面和报告共用同一个 t()。
 export function findings({ s, video, scored, level = 'solid' }) {
   const L = LEVELS[level] || LEVELS.solid;
   const out = [];
   const d = scored.dims;
   const lost = (k) => d[k].max - d[k].got;
+  const rise = s.finals.rising;
 
   if (s.fillerRate > L.filler[0] * 1.6) out.push({
-    dim: 'clarity', lost: lost('clarity'),
-    text: `软化词密度 ${s.fillerRate.toFixed(1)}/100 词（专业演讲者 0.5–1.9）。like / just / actually / really / pretty 每 17 个词就冒一个，听感发软。`,
+    dim: 'clarity', lost: lost('clarity'), key: 'tip.fillers',
+    vars: { rate: s.fillerRate.toFixed(1) },
   });
-  if (d.production.got < d.production.max * 0.7) out.push({
-    dim: 'production', lost: lost('production'),
-    text: `画面 ${Math.round(video?.width || 0)}×${Math.round(video?.height || 0)}，中位亮度 ${Math.round(video?.lumaMedian ?? 0)}。构图和灯光还能再拿 ${lost('production').toFixed(1)} 分。`,
+  if (d.production.frameKnown && d.production.got < d.production.max * 0.7) out.push({
+    dim: 'production', lost: lost('production'), key: 'tip.production',
+    vars: {
+      w: Math.round(video?.width || 0), h: Math.round(video?.height || 0),
+      luma: Math.round(video?.lumaMedian ?? 0), lost: lost('production').toFixed(1),
+    },
   });
-  const t = s.finals.falling + s.finals.flat + s.finals.rising || 1;
-  if (s.finals.rising / t > 0.33) out.push({
-    dim: 'prosody', lost: lost('prosody'),
-    text: `句尾上扬占 ${Math.round(s.finals.rising / t * 100)}%（${s.finals.rising}/${t}）。陈述句句尾该往下落，上扬留给问句。`,
+  const t = s.finals.falling + s.finals.flat + rise || 1;
+  if (rise / t > 0.33) out.push({
+    dim: 'prosody', lost: lost('prosody'), key: 'tip.finals',
+    vars: { pct: Math.round(rise / t * 100), n: rise, total: t },
   });
   if (s.articWpm > L.artic[0] + 0.8 * L.artic[1]) out.push({
-    dim: 'pacing', lost: lost('pacing'),
-    text: `发音速率 ${Math.round(s.articWpm)} wpm，只有真正开口时才这么快，容易连读吃掉辅音。`,
+    dim: 'pacing', lost: lost('pacing'), key: 'tip.artic',
+    vars: { wpm: Math.round(s.articWpm) },
   });
   if (s.longest > L.longMax) out.push({
-    dim: 'pacing', lost: lost('pacing'),
-    text: `最长一句 ${s.longest.toFixed(1)} 秒。超过 10 秒的句子，观众会丢失主语。`,
+    dim: 'pacing', lost: lost('pacing'), key: 'tip.longest',
+    vars: { sec: s.longest.toFixed(1) },
   });
   if ((video?.motionAvg ?? 0) < L.motion * 0.7) out.push({
-    dim: 'body', lost: lost('body'),
-    text: `画面动作幅度 ${(video?.motionAvg ?? 0).toFixed(1)}（专业对镜头演讲者在 9–10）。手势太小，手可能根本没进画。`,
+    dim: 'body', lost: lost('body'), key: 'tip.motion',
+    vars: { motion: (video?.motionAvg ?? 0).toFixed(1) },
   });
   return out.sort((a, b) => b.lost - a.lost);
 }

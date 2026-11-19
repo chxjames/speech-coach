@@ -1,64 +1,79 @@
 import { fmtTime } from './audio.js';
+import { t } from './i18n.js';
 
 export function buildReport({ file, s, video, scored, tips, words, transcript }) {
   const d = scored.dims;
   const m = s.summary;            // 标量指标都在 summary 里
-  const name = file?.name || '未命名';
+  const name = file?.name || t('report.untitled');
   const L = [];
   const bar = (got, max) => {
     const n = Math.max(0, Math.min(10, Math.round(got / max * 10)));
     return '█'.repeat(n) + '░'.repeat(10 - n);
   };
 
-  L.push(`# 演讲体检报告：${name}`);
+  L.push(t('report.title', { name }));
   L.push('');
-  const lv = { starter: '入门', solid: '进阶', pro: '专业' }[scored.level] || '进阶';
-  L.push(`**总分 ${scored.total.toFixed(1)} / 100**（形态：${scored.profile === 'camera' ? '对镜头' : '讲台'}；水平：${lv}）`);
+  L.push(t('report.total', {
+    total: scored.total.toFixed(1),
+    profile: t('profile.' + scored.profile),
+    level: t('level.' + scored.level),
+  }));
   L.push('');
-  L.push('## 六个维度');
+  L.push(t('report.dims'));
   L.push('');
-  L.push('| 维度 | 得分 | 占比 |');
+  L.push(`| ${t('report.th.dim')} | ${t('report.th.score')} | ${t('report.th.scale')} |`);
   L.push('|---|---|---|');
-  const cn = { content: '内容与结构', pacing: '语速与节奏', prosody: '语调与表现力', clarity: '清晰度', body: '身体语言', production: '制作与镜头' };
   for (const k of ['content', 'pacing', 'prosody', 'clarity', 'body', 'production']) {
-    L.push(`| ${cn[k]} | ${d[k].got.toFixed(1)} / ${d[k].max} | ${bar(d[k].got, d[k].max)} |`);
+    L.push(`| ${t('dim.' + k)} | ${d[k].got.toFixed(1)} / ${d[k].max} | ${bar(d[k].got, d[k].max)} |`);
   }
   L.push('');
-  L.push('## 硬指标');
+  L.push(t('report.metrics'));
   L.push('');
-  L.push(`- 词数 ${m.words}，说话总时长 ${m.speechSec.toFixed(1)}s`);
-  L.push(`- 净语速 ${Math.round(m.wpm)} wpm，发音速率 ${Math.round(m.articWpm)} wpm`);
-  L.push(`- 停顿 ${m.pauses} 次，平均 ${m.pauseAvg.toFixed(2)}s，最长 ${m.pauseMax.toFixed(1)}s`);
-  L.push(`- 最长一句 ${m.longest.toFixed(1)}s`);
-  L.push(`- 音高中位 ${m.medianPitch ? Math.round(m.medianPitch) + ' Hz' : '—'}，音域 ${m.rangeSt != null ? m.rangeSt.toFixed(1) + ' 半音' : '—'}，句间变化 ${m.segSdSt.toFixed(2)} 半音`);
-  L.push(`- 句尾：降 ${m.finals.falling} / 平 ${m.finals.flat} / 升 ${m.finals.rising}`);
-  L.push(`- 软化词 ${m.fillers} 处，密度 ${m.fillerRate.toFixed(1)}/100 词`);
+  L.push(t('report.words', { words: m.words, sec: m.speechSec.toFixed(1) }));
+  L.push(t('report.rate', { wpm: Math.round(m.wpm), artic: Math.round(m.articWpm) }));
+  L.push(t('report.pause', { n: m.pauses, avg: m.pauseAvg.toFixed(2), max: m.pauseMax.toFixed(1) }));
+  L.push(t('report.longest', { sec: m.longest.toFixed(1) }));
+  L.push(t('report.pitch', {
+    hz: m.medianPitch ? t('report.hz', { v: Math.round(m.medianPitch) }) : '—',
+    range: m.rangeSt != null ? t('report.st', { v: m.rangeSt.toFixed(1) }) : '—',
+    sd: t('report.st', { v: m.segSdSt.toFixed(2) }),
+  }));
+  L.push(t('report.finals', { fall: m.finals.falling, flat: m.finals.flat, rise: m.finals.rising }));
+  L.push(t('report.fillers', { n: m.fillers, rate: m.fillerRate.toFixed(1) }));
   if (video) {
-    L.push(`- 画面 ${video.width}×${video.height}，码率 ${Math.round(video.bitrateKbps || 0)} kbps，中位亮度 ${Math.round(video.lumaMedian || 0)}，动作幅度 ${video.motionAvg.toFixed(1)}`);
+    L.push(t('report.video', {
+      w: video.width, h: video.height,
+      kbps: Math.round(video.bitrateKbps || 0),
+      luma: Math.round(video.lumaMedian || 0),
+      motion: video.motionAvg.toFixed(1),
+    }));
   }
   L.push('');
   if (tips.length) {
-    L.push('## 按丢分排序，先改这些');
+    L.push(t('report.tips'));
     L.push('');
-    tips.forEach((t, i) => L.push(`${i + 1}. ${t.text}`));
+    tips.forEach((tip, i) => L.push(`${i + 1}. ${t(tip.key, tip.vars)}`));
     L.push('');
   }
-  L.push('## 逐句');
+  L.push(t('report.segs'));
   L.push('');
-  L.push('| 时间 | 内容 | 时长 | 音高 | 句尾 |');
+  L.push(`| ${t('report.th.time')} | ${t('report.th.text')} | ${t('report.th.dur')} | ${t('report.th.pitch')} | ${t('report.th.ending')} |`);
   L.push('|---|---|---|---|---|');
   for (const g of s.segments) {
-    const dir = g.finalSlope == null ? '—' : g.finalSlope < -0.5 ? '降' : g.finalSlope > 0.5 ? '升' : '平';
-    L.push(`| ${fmtTime(g.start)} | ${g.text.replace(/\|/g, '\\|')} | ${g.dur.toFixed(1)}s | ${g.medianPitch ? Math.round(g.medianPitch) : '—'} | ${dir} |`);
+    const dir = g.finalSlope == null ? '—'
+      : g.finalSlope < -0.5 ? t('dir.fall')
+      : g.finalSlope > 0.5 ? t('dir.rise')
+      : t('dir.flat');
+    L.push(`| ${fmtTime(g.start)} | ${g.text.replace(/\\|/g, '\\\\|')} | ${g.dur.toFixed(1)}s | ${g.medianPitch ? Math.round(g.medianPitch) : '—'} | ${dir} |`);
   }
   L.push('');
-  L.push('## 文字稿');
+  L.push(t('report.transcript'));
   L.push('');
   L.push('```');
   L.push(transcript || words.map(w => w.text).join(' '));
   L.push('```');
   L.push('');
-  L.push('> 只有「内容与结构」是人工打分（页面上的滑杆），其余全是自动计算。');
+  L.push(t('report.note'));
   return L.join('\n');
 }
 

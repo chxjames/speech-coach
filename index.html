@@ -8,62 +8,65 @@
 </head>
 <body>
 <header>
-  <h1>演讲体检</h1>
-  <p class="sub">拖一个演讲视频进来，在浏览器里算出语速、停顿、音高、句尾、软词密度和画面分。<strong>视频不会离开你的电脑。</strong></p>
+  <div class="topline">
+    <h1 data-i18n="h1">演讲体检</h1>
+    <button id="lang" class="langbtn" title="中文 / English" aria-label="Switch language">EN</button>
+  </div>
+  <p class="sub" data-i18n-html="sub">拖一个演讲视频进来，在浏览器里算出语速、停顿、音高、句尾、软词密度和画面分。<strong>视频不会离开你的电脑。</strong></p>
 </header>
 
 <main>
   <section id="drop" class="drop">
     <input type="file" id="file" accept="video/*,audio/*" hidden>
-    <p class="drop-title">把视频拖到这里，或 <button id="pick" class="link">选择文件</button></p>
-    <p class="hint">支持 mp4 / mov / webm / m4a，建议 3 分钟以内</p>
+    <p class="drop-title"><span data-i18n="drop.lead">把视频拖到这里，或</span> <button id="pick" class="link" data-i18n="drop.pick">选择文件</button></p>
+    <p class="hint" data-i18n="drop.hint">支持 mp4 / mov / webm / m4a，建议 3 分钟以内</p>
   </section>
 
   <section id="controls" class="panel hidden">
     <div class="row">
-      <label>形态
+      <label><span data-i18n="label.profile">形态</span>
         <select id="profile">
-          <option value="camera">对镜头 / 网课</option>
-          <option value="stage">讲台站立</option>
+          <option value="camera" data-i18n="opt.profile.camera">对镜头 / 网课</option>
+          <option value="stage" data-i18n="opt.profile.stage">讲台站立</option>
         </select>
       </label>
-      <label>水平
+      <label><span data-i18n="label.level">水平</span>
         <select id="level">
-          <option value="starter">入门（第一次上台）</option>
-          <option value="solid" selected>进阶（能讲完，想讲好）</option>
-          <option value="pro">专业（比赛 / 路演）</option>
+          <option value="starter" data-i18n="opt.level.starter">入门（第一次上台）</option>
+          <option value="solid" selected data-i18n="opt.level.solid">进阶（能讲完，想讲好）</option>
+          <option value="pro" data-i18n="opt.level.pro">专业（比赛 / 路演）</option>
         </select>
       </label>
-      <label>识别模型
+      <label><span data-i18n="label.model">识别模型</span>
         <select id="model">
-          <option value="Xenova/whisper-small.en" selected>small.en（英文，约 250MB）</option>
-          <option value="Xenova/whisper-base.en">base.en（更快，吃字多）</option>
-          <option value="Xenova/whisper-small">small（多语言，中文用这个）</option>
+          <option value="Xenova/whisper-small.en" selected data-i18n="opt.model.small_en">small.en（英文，约 250MB）</option>
+          <option value="Xenova/whisper-base.en" data-i18n="opt.model.base_en">base.en（更快，吃字多）</option>
+          <option value="Xenova/whisper-small" data-i18n="opt.model.small">small（多语言，中文用这个）</option>
         </select>
       </label>
-      <label>并行数
+      <label><span data-i18n="label.workers">并行数</span>
         <select id="workers">
           <option>1</option><option>2</option><option>3</option><option selected>4</option><option>6</option>
         </select>
       </label>
-      <button id="run" class="primary">开始分析</button>
+      <button id="run" class="primary" data-i18n="run">开始分析</button>
     </div>
     <p class="hint" id="fileinfo"></p>
   </section>
 
   <section id="progress" class="panel hidden">
     <div class="bar"><div id="barfill"></div></div>
-    <p id="status">准备中…</p>
+    <p id="status" data-i18n="status.ready">准备中…</p>
   </section>
 
   <section id="result" class="hidden">
     <div id="scorecard"></div>
-    <h2>逐句</h2>
+    <h2 data-i18n="h2.segments">逐句</h2>
     <div class="tablewrap"><table id="segments"></table></div>
-    <h2>文字稿</h2>
+    <h2 data-i18n="h2.transcript">文字稿</h2>
     <pre id="transcript"></pre>
     <div class="row">
-      <button id="download" class="ghost">下载报告（.md）</button>
+      <button id="download" class="ghost" data-i18n="btn.download">下载报告（.md）</button>
     </div>
   </section>
 </main>

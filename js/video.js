@@ -14,6 +14,17 @@ export async function analyzeVideo(file, { samples = 24 } = {}) {
     v.onerror = () => rej(new Error('这个视频浏览器读不了'));
   });
 
+  // 有的文件 loadedmetadata 之后一两帧才拿到尺寸；先等一次 loadeddata
+  if (!v.videoWidth) {
+    await new Promise((res) => {
+      const done = () => res();
+      v.addEventListener('loadeddata', done, { once: true });
+      setTimeout(done, 3000);
+    });
+  }
+  const vw = v.videoWidth, vh = v.videoHeight;
+  if (!vw || !vh) throw new Error('这个视频浏览器读不出画面尺寸');
+
   const duration = v.duration || 0;
   const W = 160, H = 90;
   const canvas = document.createElement('canvas');
@@ -58,8 +69,8 @@ export async function analyzeVideo(file, { samples = 24 } = {}) {
   const lumas = frames.map(f => f.luma).sort((a, b) => a - b);
   const motions = frames.map(f => f.motion);
   return {
-    width: v.videoWidth || 0,
-    height: v.videoHeight || 0,
+    width: vw,
+    height: vh,
     duration,
     lumaMedian: lumas[Math.floor(lumas.length / 2)] ?? null,
     lumaMin: lumas[0] ?? null,

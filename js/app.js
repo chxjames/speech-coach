@@ -4,6 +4,7 @@ import { analyzeProsody } from './prosody.js';
 import { analyzeVideo } from './video.js';
 import { score, findings } from './score.js';
 import { buildReport, download } from './report.js';
+import { t, hasKey, setLang, getLang, onLangChange } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const state = { file: null, words: [], transcript: '', prosody: null, video: null, scored: null, tips: [], manual: {} };
@@ -14,6 +15,16 @@ if (isMobile) {
   $('model').value = 'Xenova/whisper-base.en';
   $('workers').value = '1';
 }
+
+// ---------- 语言 ----------
+$('lang').onclick = () => setLang(getLang() === 'zh' ? 'en' : 'zh');
+onLangChange(() => {
+  if (lastStatus) {
+    $('status').textContent = lastStatus.key ? t(lastStatus.key, lastStatus.vars) : lastStatus.text;
+  }
+  if (state.scored) render();
+  if (state.file) $('fileinfo').textContent = `${state.file.name} · ${(state.file.size / 1024 / 1024).toFixed(1)} MB`;
+});
 
 // ---------- 选择文件 ----------
 $('pick').onclick = () => $('file').click();
@@ -47,9 +58,9 @@ $('run').onclick = async () => {
   const t0 = performance.now();
 
   try {
-    setProgress(0.02, '解码音轨…');
+    setProgress(0.02, 'progress.decode');
     const { samples, duration } = await decodeToMono16k(state.file, (m) => setProgress(0.05, m));
-    setProgress(0.1, `音频 ${duration.toFixed(1)} 秒，准备识别…`);
+    setProgress(0.1, 'progress.audio', { dur: duration.toFixed(1) });
 
     const { words, text } = await transcribe(samples, {
       model: $('model').value,
@@ -67,37 +78,42 @@ $('run').onclick = async () => {
     state.words = words;
     state.transcript = text;
 
-    setProgress(0.88, '算韵律…');
+    setProgress(0.88, 'progress.prosody');
     await tick();
     state.prosody = analyzeProsody(samples, words);
 
-    setProgress(0.94, '看画面…');
+    setProgress(0.94, 'progress.video');
     try {
       state.video = await analyzeVideo(state.file);
+      if (!state.video?.width) state.video = null;
     } catch (e) {
       console.warn('画面分析失败：', e);
       state.video = null;
     }
 
-    setProgress(1, '打分…');
+    setProgress(1, 'progress.scoring');
     render();
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
-    setProgress(1, `完成，用时 ${secs} 秒。视频没有离开这台电脑。`);
+    setProgress(1, 'progress.done', { secs });
   } catch (err) {
     console.error(err);
     $('status').innerHTML = '';
     const span = document.createElement('span');
     span.className = 'err';
-    span.textContent = '出错了：' + (err && err.message || err);
+    span.textContent = t('progress.error', { msg: (err && err.message) || err });
     $('status').appendChild(span);
   } finally {
     $('run').disabled = false;
   }
 };
 
-function setProgress(p, msg) {
+// 进度消息记下 key/vars，切语言时能重画（已经翻译好的句子就原样重放）
+let lastStatus = null;
+function setProgress(p, msg, vars) {
   $('barfill').style.width = Math.round(p * 100) + '%';
-  if (msg) $('status').textContent = msg;
+  if (!msg) return;
+  lastStatus = hasKey(msg) ? { key: msg, vars } : { text: msg };
+  $('status').textContent = lastStatus.key ? t(lastStatus.key, vars) : lastStatus.text;
 }
 const tick = () => new Promise(r => setTimeout(r, 30));
 
@@ -117,14 +133,13 @@ function render() {
 function renderScorecard() {
   const s = state.prosody.summary;
   const sc = state.scored;
-  const cols = { content: '内容与结构', pacing: '语速与节奏', prosody: '语调与表现力', clarity: '清晰度', body: '身体语言', production: '制作与镜头' };
   const notes = {
-    content: '人工估计，可拖动',
-    pacing: `${Math.round(s.wpm)} wpm · 停顿 ${s.pauseAvg.toFixed(2)}s`,
-    prosody: `音域 ${s.rangeSt != null ? s.rangeSt.toFixed(1) : '—'} 半音 · 句尾升 ${s.finals.rising}`,
-    clarity: `软化词 ${s.fillerRate.toFixed(1)}/100 词`,
-    body: `动作幅度 ${(state.video?.motionAvg ?? 0).toFixed(1)}`,
-    production: `${state.video?.width || 0}×${state.video?.height || 0}`,
+    content: t('note.content'),
+    pacing: t('note.pacing', { wpm: Math.round(s.wpm), pause: s.pauseAvg.toFixed(2) }),
+    prosody: t('note.prosody', { range: s.rangeSt != null ? s.rangeSt.toFixed(1) : '—', rising: s.finals.rising }),
+    clarity: t('note.clarity', { rate: s.fillerRate.toFixed(1) }),
+    body: t('note.body', { motion: (state.video?.motionAvg ?? 0).toFixed(1) }),
+    production: state.video ? `${state.video.width}×${state.video.height}` : '—',
   };
 
   const el = $('scorecard');
@@ -133,16 +148,16 @@ function renderScorecard() {
     <div class="dims">
       ${Object.entries(sc.dims).map(([k, d]) => `
         <div class="dim">
-          <div class="name"><span>${cols[k]}</span><span>${d.got.toFixed(1)} / ${d.max}</span></div>
+          <div class="name"><span>${t('dim.' + k)}</span><span>${d.got.toFixed(1)} / ${d.max}</span></div>
           <div class="mini"><i style="width:${Math.round(d.got / d.max * 100)}%"></i></div>
           <div class="note">${notes[k]}</div>
           ${k === 'content' ? `<input type="range" min="0" max="25" step="0.5" value="${state.manual.content ?? 18}" data-manual="content" style="width:100%;margin-top:8px">` : ''}
           ${k === 'production' && sc.compBudget > 0 ? `<input type="range" min="0" max="${sc.compBudget}" step="0.5" value="${state.manual.composition ?? sc.compBudget / 2}" data-manual="composition" style="width:100%;margin-top:8px">` : ''}
         </div>`).join('')}
     </div>
-    ${state.tips.length ? `<div class="dims">${state.tips.map((t, i) => `
-      <div class="dim"><div class="name"><span>建议 ${i + 1}</span><span>-${t.lost.toFixed(1)} 分</span></div>
-      <div class="note" style="color:var(--text);margin-top:6px">${t.text}</div></div>`).join('')}</div>` : ''}
+    ${state.tips.length ? `<div class="dims">${state.tips.map((tip, i) => `
+      <div class="dim"><div class="name"><span>${t('tip.n', { n: i + 1 })}</span><span>${t('tip.cost', { x: tip.lost.toFixed(1) })}</span></div>
+      <div class="note" style="color:var(--text);margin-top:6px">${t(tip.key, tip.vars)}</div></div>`).join('')}</div>` : ''}
   `;
 
   el.querySelectorAll('input[data-manual]').forEach(inp => {
@@ -158,7 +173,10 @@ function renderScorecard() {
 
 function renderSegments() {
   const rows = state.prosody.segments.map(g => {
-    const dir = g.finalSlope == null ? '—' : g.finalSlope < -0.5 ? '<span class="good">降</span>' : g.finalSlope > 0.5 ? '<span class="warn">升</span>' : '平';
+    const dir = g.finalSlope == null ? '—'
+      : g.finalSlope < -0.5 ? `<span class="good">${t('dir.fall')}</span>`
+      : g.finalSlope > 0.5 ? `<span class="warn">${t('dir.rise')}</span>`
+      : t('dir.flat');
     return `<tr>
       <td class="t">${fmtTime(g.start)}</td>
       <td>${escapeHtml(g.text)}</td>
@@ -167,7 +185,7 @@ function renderSegments() {
       <td class="t">${dir}</td>
     </tr>`;
   }).join('');
-  $('segments').innerHTML = `<thead><tr><th>时间</th><th>内容</th><th>时长</th><th>音高</th><th>句尾</th></tr></thead><tbody>${rows}</tbody>`;
+  $('segments').innerHTML = `<thead><tr><th>${t('seg.time')}</th><th>${t('seg.text')}</th><th>${t('seg.dur')}</th><th>${t('seg.pitch')}</th><th>${t('seg.final')}</th></tr></thead><tbody>${rows}</tbody>`;
 }
 
 const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -185,3 +203,4 @@ $('download').onclick = () => {
 
 // 调试用：控制台里 __report() 能看到生成的 markdown
 window.__report = () => currentReport();
+window.__state = state;   // 调试用：控制台里能看中间结果

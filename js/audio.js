@@ -1,13 +1,14 @@
 // 把任意视频/音频文件解成 16kHz 单声道 Float32Array。
 // 不依赖 ffmpeg：浏览器的 decodeAudioData 能解 mp4(AAC)、mov、webm、m4a、mp3、wav。
+import { t } from './i18n.js';
 
 export const SR = 16000;
 
 export async function decodeToMono16k(file, onProgress = () => {}) {
-  onProgress('读取文件…');
+  onProgress(t('progress.read'));
   const buf = await file.arrayBuffer();
 
-  onProgress('解码音轨…');
+  onProgress(t('progress.decode'));
   const Ctx = window.AudioContext || window.webkitAudioContext;
   const ac = new Ctx();
   let decoded;
@@ -32,7 +33,7 @@ export async function decodeToMono16k(file, onProgress = () => {}) {
     }
   }
 
-  onProgress('重采样到 16kHz…');
+  onProgress(t('progress.resample'));
   const samples = await resample(mono, decoded.sampleRate, SR);
   return { samples, duration, srcRate: decoded.sampleRate, srcChannels: ch };
 }

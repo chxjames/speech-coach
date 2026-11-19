@@ -1,5 +1,6 @@
 // Whisper 的 Worker 池：同时跑 N 段，按顺序把结果拼起来。
 // 注意：每个 Worker 各持有一份模型（small 约 250MB），所以并行数不要开太大。
+import { t } from './i18n.js';
 
 import { chunkAudio } from './audio.js';
 
@@ -12,7 +13,7 @@ export async function transcribe(samples, {
 } = {}) {
   const chunks = chunkAudio(samples, chunkSeconds);
   const n = Math.max(1, Math.min(workers, chunks.length));
-  onProgress({ stage: 'load', done: 0, total: chunks.length, msg: `启动 ${n} 个识别线程…` });
+  onProgress({ stage: 'load', done: 0, total: chunks.length, msg: t('progress.workers', { n }) });
 
   const pool = [];
   for (let i = 0; i < n; i++) {
@@ -28,10 +29,10 @@ export async function transcribe(samples, {
       if (m.type === 'ready') {
         w.removeEventListener('message', onMsg);
         loaded++;
-        onProgress({ stage: 'load', done: loaded / n, total: 1, msg: `模型已加载 ${loaded}/${n} 个线程` });
+        onProgress({ stage: 'load', done: loaded / n, total: 1, msg: t('progress.loaded', { n: `${loaded}/${n}` }) });
         resolve();
       } else if (m.type === 'load') {
-        onProgress({ stage: 'load', done: null, total: 1, msg: `下载模型 ${Math.round((m.loaded / m.total) * 100)}% · ${m.file}` });
+        onProgress({ stage: 'load', done: null, total: 1, msg: t('progress.download', { pct: Math.round((m.loaded / m.total) * 100), file: m.file }) });
       } else if (m.type === 'error') {
         w.removeEventListener('message', onMsg);
         reject(new Error(m.message));
@@ -66,7 +67,7 @@ export async function transcribe(samples, {
       });
       results[idx] = res;
       done++;
-      onProgress({ stage: 'asr', done, total: chunks.length, msg: `识别中 ${done}/${chunks.length} 段` });
+      onProgress({ stage: 'asr', done, total: chunks.length, msg: t('progress.asr', { done, total: chunks.length }) });
     }
   }
 
