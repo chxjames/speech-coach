@@ -6,7 +6,14 @@ Everything runs inside your browser. The video never leaves your computer — no
 
 **[Open it online](https://chxjames.github.io/speech-coach/)** · [中文说明](README.zh.md) · [How the scoring works](SCORING.md)
 
-![The score card after analysing a 2-minute talk](docs/screenshot-en.png)
+Two ways in, one engine:
+
+| | What it is | Who it is for |
+|---|---|---|
+| **Web app** (`web/`) | The page above. Drop a file, get a score. Nothing is uploaded. | Anyone, on a laptop or a phone |
+| **MCP server** (`mcp/`) | A tool for Claude Code, Codex and other MCP clients, so an agent can score a video for you | People who live in a terminal |
+
+![The score card after analysing a 2-minute talk](web/docs/screenshot-en.png)
 
 The interface switches between English and Chinese with the button in the top-right corner; the choice is remembered.
 
@@ -174,28 +181,33 @@ Models are fetched from the Hugging Face CDN on first use and cached by the brow
 
 ## Deploy your own copy
 
-1. Fork or push this folder to a GitHub repository.
-2. **Settings → Pages → Source: Deploy from a branch**, branch `main`, folder `/ (root)`.
+1. Fork or push this repository to GitHub.
+2. **Settings → Pages → Source: Deploy from a branch**, branch `main`, folder **`/web`**.
 3. Open `https://<user>.github.io/<repo>/`.
 
-`.nojekyll` is already present, so the `js/` folder is served as-is.
+`web/.nojekyll` is already present, so the `web/js/` folder is served as-is.
 
 ## Project layout
 
 ```
-index.html          page shell
-app.css             styles (light/dark, mobile)
-js/audio.js         decode any video → mono 16 kHz, chunking
-js/asr-worker.js    one Whisper worker (WASM, int8)
-js/asr.js           worker pool, ordered merge, duplicate-word cleanup
-js/prosody.js       pitch tracking, sentence split, pauses, fillers, rates
-js/video.js         resolution, bitrate, exposure, motion
-js/score.js         the six dimensions, weights, three levels  ← change targets here
-js/i18n.js          English / Chinese strings
-js/report.js        Markdown report
-js/app.js           wiring
-SCORING.md          every formula and its source
-serve_isolated.py   local server that sends COOP/COEP, for re-measuring
+web/
+  index.html          page shell
+  app.css             styles (light/dark, mobile)
+  js/audio.js         decode any video → mono 16 kHz, chunking
+  js/asr-worker.js    one Whisper worker (WASM, int8)
+  js/asr.js           worker pool, ordered merge, duplicate-word cleanup
+  js/prosody.js       pitch tracking, sentence split, pauses, fillers, rates
+  js/video.js         resolution, bitrate, exposure, motion
+  js/score.js         the six dimensions, weights, scenes, levels  ← change targets here
+  js/i18n.js          English / Chinese strings
+  js/report.js        Markdown report
+  js/app.js           wiring
+  serve_isolated.py   local server that sends COOP/COEP, for re-measuring
+mcp/
+  src/server.js       MCP server, the `analyze_speech` tool
+  src/*.js            the same engine, run by Node instead of the browser
+README.md             this file
+SCORING.md            every formula and its source
 ```
 
 ## License

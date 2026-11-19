@@ -6,7 +6,14 @@
 
 **[在线直接用](https://chxjames.github.io/speech-coach/)** · [English](README.md) · [评分方法](SCORING.md)
 
-![分析一段两分钟演讲后的评分卡](docs/screenshot-zh.png)
+两种用法，同一套引擎：
+
+| | 是什么 | 给谁用 |
+|---|---|---|
+| **网页版**（`web/`） | 就是上面那个页面。拖一个文件进去，出分数，什么都不上传。 | 任何人，电脑或手机都行 |
+| **MCP server**（`mcp/`） | 给 Claude Code、Codex 这类 MCP 客户端用的工具，让 agent 帮你分析视频 | 习惯在终端里干活的人 |
+
+![分析一段两分钟演讲后的评分卡](web/docs/screenshot-zh.png)
 
 右上角的按钮可以在中文和英文之间切换，选择会被记住。
 
@@ -161,28 +168,33 @@ GitHub Pages 不能自定义 `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedd
 
 ## 部署一份自己的
 
-1. 把这个文件夹推到（或 fork 成）一个 GitHub 仓库。
-2. **Settings → Pages → Source 选 Deploy from a branch**，分支 `main`，目录 `/ (root)`。
+1. 把这个仓库推到（或 fork 成）你自己的 GitHub 仓库。
+2. **Settings → Pages → Source 选 Deploy from a branch**，分支 `main`，目录 **`/web`**。
 3. 打开 `https://<用户名>.github.io/<仓库名>/`。
 
-仓库里已有 `.nojekyll`，`js/` 目录会原样发布。
+`web/.nojekyll` 已经在了，`web/js/` 目录会原样发布。
 
 ## 文件结构
 
 ```
-index.html          页面骨架
-app.css             样式（深浅色自适应、手机布局）
-js/audio.js         解码任意视频 → 单声道 16 kHz、分块
-js/asr-worker.js    一个 Whisper Worker（WASM，int8）
-js/asr.js           Worker 池、按序合并、去掉接缝重复词
-js/prosody.js       音高跟踪、切句、停顿、填充词、语速
-js/video.js         分辨率、码率、曝光、动作幅度
-js/score.js         六个维度、权重、三档水平  ← 改目标值改这里
-js/i18n.js          中英文案
-js/report.js        Markdown 报告
-js/app.js           串起来
+web/
+  index.html        页面骨架
+  app.css           样式（深浅色自适应、手机布局）
+  js/audio.js       解码任意视频 → 单声道 16 kHz、分块
+  js/asr-worker.js  一个 Whisper Worker（WASM，int8）
+  js/asr.js         Worker 池、按序合并、去掉接缝重复词
+  js/prosody.js     音高跟踪、切句、停顿、填充词、语速
+  js/video.js       分辨率、码率、曝光、动作幅度
+  js/score.js       六个维度、权重、场景、三档水平  ← 改目标值改这里
+  js/i18n.js        中英文案
+  js/report.js      Markdown 报告
+  js/app.js         串起来
+  serve_isolated.py 带 COOP/COEP 的本地服务器，用于复测
+mcp/
+  src/server.js     MCP server，`analyze_speech` 工具
+  src/*.js          同一套引擎，用 Node 跑而不是浏览器
+README.md           本文件
 SCORING.md          全部公式与出处
-serve_isolated.py   带 COOP/COEP 的本地服务器，用于复测
 ```
 
 ## 协议

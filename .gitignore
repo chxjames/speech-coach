@@ -4,3 +4,7 @@ node_modules/
 *.wav
 report*.md
 test-report.md
+mcp/node_modules/
+mcp/test/out-*
+*.tgz
+.claude/
