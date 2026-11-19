@@ -36,11 +36,21 @@ python -m http.server 8792
 2. Settings → Pages → Source: *Deploy from a branch*, branch `main`, folder `/ (root)`.
 3. Open `https://<user>.github.io/<repo>/`.
 
-`Pages` cannot set `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy`, so
-`SharedArrayBuffer` is unavailable and the WASM backend runs single-threaded per worker.
-The app compensates by running several workers in parallel. If you are serving it
-yourself behind a server you control, add those two headers to get multi-threaded WASM
-and roughly 2× the speed.
+GitHub Pages cannot set `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy`,
+so `SharedArrayBuffer` is unavailable and the WASM backend runs single-threaded inside
+each worker.
+
+**That turned out to be fine.** Measured on a 125 s clip with 4 workers, the same machine:
+
+| Setup | Time |
+|---|---|
+| no COOP/COEP headers (GitHub Pages) | 30.8 s / 31.1 s / 33.0 s |
+| with COOP/COEP headers, `crossOriginIsolated = true` | 37.3 s / 43.1 s |
+
+Adding the headers *slowed it down*: each of the 4 workers started its own thread pool and
+they fought over the same cores. Parallelism at the worker level already covers the machine,
+so a host without custom headers is not a drawback here. `serve_isolated.py` is kept in the
+repo if you want to re-measure on your hardware.
 
 ## Models
 

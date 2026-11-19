@@ -36,11 +36,19 @@ python -m http.server 8792
 2. Settings → Pages → Source 选 *Deploy from a branch*，分支 `main`，目录 `/ (root)`
 3. 打开 `https://<用户名>.github.io/<仓库名>/`
 
-**关于速度要说清楚**：GitHub Pages 不能自定义 HTTP 响应头，所以用不了
-`SharedArrayBuffer`，WASM 的跨线程加速就没了。这个页面靠"多个 Worker 并行"来补，
-本地和 GitHub 上的速度差不多。如果你用自己的服务器托管，加上
-`Cross-Origin-Opener-Policy: same-origin` 和 `Cross-Origin-Embedder-Policy: require-corp`
-两个头，单线程也能变成多线程，大约快一倍。
+**关于速度**：GitHub Pages 不能自定义 HTTP 响应头，所以用不了 `SharedArrayBuffer`，
+每个 Worker 内部是单线程的。**我本以为这会是个大损失，实测却不是。**
+
+同一台机器、同一段 125 秒视频、4 个 Worker：
+
+| 配置 | 用时 |
+|---|---|
+| 不加 COOP/COEP 头（= GitHub Pages） | 30.8 秒 / 31.1 秒 / 33.0 秒 |
+| 加 COOP/COEP 头，`crossOriginIsolated = true` | 37.3 秒 / 43.1 秒 |
+
+**加了头反而慢**：4 个 Worker 各自又开了一套线程池，互相抢 CPU 核心。
+Worker 层面的并行已经把机器用满了，所以没有自定义响应头的平台在这里不吃亏。
+`serve_isolated.py` 留在仓库里，想在你自己的机器上复测随时能跑。
 
 ## 模型怎么选
 
