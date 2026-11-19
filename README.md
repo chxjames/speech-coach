@@ -19,7 +19,10 @@ Everything runs **in your browser**. The video never leaves your computer — no
 
 Two weight profiles: **对镜头** (talking to a webcam) and **讲台** (standing at a podium). Switching changes how many points body language and production are worth.
 
-See [SCORING.md](SCORING.md) for every formula.
+Three levels: **入门** (first time on stage), **进阶** (you can finish a talk, want to do it well), **专业** (competition / pitch).
+The same measurements are used; only the target values change. On one 125 s recording the same video scores **79.0 / 74.9 / 68.1** at the three levels.
+
+See [SCORING.md](SCORING.md) for every formula, and for a table saying which target values come from the literature (Foulke 1968, Goldman-Eisler 1968, Aoyama 2016, Tielen 1989, …) and which are my own estimates.
 
 ## How to run locally
 

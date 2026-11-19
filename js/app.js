@@ -104,8 +104,9 @@ const tick = () => new Promise(r => setTimeout(r, 30));
 // ---------- 渲染 ----------
 function render() {
   const profile = $('profile').value;
-  state.scored = score({ s: state.prosody.summary, video: state.video, profile, manual: state.manual });
-  state.tips = findings({ s: state.prosody.summary, video: state.video, scored: state.scored });
+  const level = $('level').value;
+  state.scored = score({ s: state.prosody.summary, video: state.video, profile, level, manual: state.manual });
+  state.tips = findings({ s: state.prosody.summary, video: state.video, scored: state.scored, level });
 
   $('result').classList.remove('hidden');
   renderScorecard();

@@ -5,11 +5,15 @@ export function buildReport({ file, s, video, scored, tips, words, transcript })
   const m = s.summary;            // 标量指标都在 summary 里
   const name = file?.name || '未命名';
   const L = [];
-  const bar = (got, max) => '█'.repeat(Math.round(got / max * 10)) + '░'.repeat(10 - Math.round(got / max * 10));
+  const bar = (got, max) => {
+    const n = Math.max(0, Math.min(10, Math.round(got / max * 10)));
+    return '█'.repeat(n) + '░'.repeat(10 - n);
+  };
 
   L.push(`# 演讲体检报告：${name}`);
   L.push('');
-  L.push(`**总分 ${scored.total.toFixed(1)} / 100**（形态：${scored.profile === 'camera' ? '对镜头' : '讲台'}）`);
+  const lv = { starter: '入门', solid: '进阶', pro: '专业' }[scored.level] || '进阶';
+  L.push(`**总分 ${scored.total.toFixed(1)} / 100**（形态：${scored.profile === 'camera' ? '对镜头' : '讲台'}；水平：${lv}）`);
   L.push('');
   L.push('## 六个维度');
   L.push('');
