@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// speech-coach-mcp —— 把「演讲体检」做成 MCP 工具，任何支持 MCP 的 agent 都能一行接入。
+// speech-coach —— 把「演讲体检」做成 MCP 工具，任何支持 MCP 的 agent 都能一行接入。
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -14,6 +14,21 @@ import { score, findings, weightsFor, SCENES, LEVELS, PROFILES } from './score.j
 import { buildReport } from './report.js';
 
 const log = (...a) => console.error('[speech-coach]', ...a);
+
+// A person typed `npx speech-coach` themselves: say what this is, do not sit
+// silently waiting for JSON-RPC on stdin.
+if (process.stdin.isTTY) {
+  console.error(`speech-coach — an MCP server (stdio), not a click-and-run CLI
+It is launched by an MCP client for you:
+
+  Claude Code:   claude mcp add speech-coach -- npx -y speech-coach
+  Codex:         ~/.codex/config.toml -> [mcp_servers.speech-coach] command = "npx", args = ["-y", "speech-coach"]
+  Any MCP host:  command "npx", args ["-y", "speech-coach"]
+
+It is not running now. Analysing a video by hand? Use the web app, nothing to
+install: https://chxjames.github.io/speech-coach/`);
+  process.exit(0);
+}
 
 const SCENE_IDS = Object.keys(SCENES);
 const LEVEL_IDS = Object.keys(LEVELS);

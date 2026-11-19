@@ -1,4 +1,4 @@
-# speech-coach-mcp
+# speech-coach
 
 An MCP server that watches a speech recording and hands back a scored coaching report.
 
@@ -19,13 +19,13 @@ Agent:  # Speech Coach report: pitch-final.mp4
 ## Install
 
 > Not on npm yet. Until `0.1.0` is published, point the client at the local file instead:
-> `node /path/to/speech-coach-mcp/src/server.js`. The commands below are what it will look like
+> `node /path/to/speech-coach/src/server.js`. The commands below are what it will look like
 > once the package is up.
 
 **Claude Code**
 
 ```bash
-claude mcp add speech-coach -- npx -y speech-coach-mcp
+claude mcp add speech-coach -- npx -y speech-coach
 ```
 
 **Codex CLI** — `~/.codex/config.toml`:
@@ -33,7 +33,7 @@ claude mcp add speech-coach -- npx -y speech-coach-mcp
 ```toml
 [mcp_servers.speech-coach]
 command = "npx"
-args = ["-y", "speech-coach-mcp"]
+args = ["-y", "speech-coach"]
 ```
 
 **DSH / any MCP host** — the server speaks plain stdio MCP:
@@ -41,7 +41,7 @@ args = ["-y", "speech-coach-mcp"]
 ```json
 {
   "mcpServers": {
-    "speech-coach": { "command": "npx", "args": ["-y", "speech-coach-mcp"] }
+    "speech-coach": { "command": "npx", "args": ["-y", "speech-coach"] }
   }
 }
 ```

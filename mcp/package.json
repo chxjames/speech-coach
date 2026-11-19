@@ -1,10 +1,10 @@
 {
-  "name": "speech-coach-mcp",
+  "name": "speech-coach",
   "version": "0.1.0",
   "description": "MCP server: analyse a speech video locally (whisper + prosody) and return a scored report",
   "type": "module",
   "bin": {
-    "speech-coach-mcp": "src/server.js"
+    "speech-coach": "src/server.js"
   },
   "files": [
     "src"
