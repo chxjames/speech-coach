@@ -26,19 +26,74 @@ export function analyzeProsody(samples, words) {
   const p10e = es[Math.floor(es.length * 0.1)] || 0;
   const p90e = es[Math.floor(es.length * 0.9)] || 0;
   const silThr = Math.max(p10e * 3, p90e * 0.012, 0.0008);
-  const silenceRatio = (a, b) => {
-    if (b <= a) return 1;
-    let n = 0, silent = 0;
-    for (const f of frames) {
-      if (f.t < a || f.t > b) continue;
-      n++;
-      if ((f.e || 0) < silThr) silent++;
-    }
-    return n ? silent / n : 1;
+
+  // 停顿判据：空隙里的能量比说话电平低 12 dB 以上才算停顿。
+  // 只用"低于绝对静音阈值"不行：舞台/教室录音有观众、空调底噪，空隙常在 -25 dB，
+  // 远高于 silThr，于是真停顿被当成"还在说话"，整段并成一句。反过来只看空隙长度也不行：
+  // Whisper 偶尔会漏词，留下一个假的 1–2 秒洞。能量差能把这两种情况分开。
+  const speechDb = 20 * Math.log10((es[Math.floor(es.length * 0.6)] || 0) + 1e-9);
+  const gapDb = (a, b) => {
+    if (b <= a) return -120;
+    const vals = [];
+    for (const f of frames) { if (f.t >= a && f.t <= b) vals.push(f.e || 0); }
+    if (!vals.length) return -120;
+    vals.sort((x, y) => x - y);
+    return 20 * Math.log10(vals[Math.floor(vals.length / 2)] + 1e-9);
   };
+  // 判成停顿的两个独立证据：整段空隙的中位能量明显低于说话电平，或空隙里过半的帧都很安静。
+  // 任一成立就算——只看中位数会被一口气的换气声拉高，只看比例会被几声杂音拉低。
+  const gapShare = (a, b) => {
+    const vals = [];
+    for (const f of frames) { if (f.t >= a && f.t <= b) vals.push(f.e || 0); }
+    if (!vals.length) return 1;
+    let quiet = 0;
+    for (const v of vals) if (20 * Math.log10(v + 1e-9) <= speechDb - 8) quiet++;
+    return quiet / vals.length;
+  };
+  const isPause = (a, b) => gapDb(a, b) <= speechDb - 8 || gapShare(a, b) >= 0.5;
 
   // 1) 按词间空隙切句，但只在空隙真的安静时才断开
-  const segs = segmentByGaps(words, 0.45, 15, silenceRatio);
+  // 3) 停顿直接从能量里找，不看词级时间戳。不同运行时（浏览器 / Node）给的词时间戳
+  // 差别不小：有的把每个词的 end 一直拉到下一个词的 start，空隙全被吃掉，停顿就找不到了。
+  // 能量是物理量，两边一样。
+  const firstStart = words.length ? words[0].start : 0;
+  const lastEnd = words.length ? words[words.length - 1].end : 0;
+  const quietDb = speechDb - 12;
+  const runs = [];
+  let run = null;
+  for (const f of frames) {
+    if (f.t < firstStart || f.t > lastEnd) continue;
+    const quiet = 20 * Math.log10((f.e || 0) + 1e-9) <= quietDb;
+    if (quiet) {
+      if (!run) run = { start: f.t, end: f.t };
+      else run.end = f.t;
+    } else if (run) { runs.push(run); run = null; }
+  }
+  if (run) runs.push(run);
+  const pauseRuns = runs
+    .map(r => ({ start: r.start, end: r.end, dur: r.end - r.start }))
+    .filter(r => r.dur >= 0.45 && r.dur <= 8);
+
+  // 按停顿切句；超过 maxLen 秒也强制断开（一口气讲太久，标点也没用了）
+  const segs = [];
+  let cur = [];
+  let pi = 0;
+  for (const w of words) {
+    while (pi < pauseRuns.length && pauseRuns[pi].end <= w.start) {
+      if (cur.length) {
+        segs.push({ words: cur, start: cur[0].start, end: cur[cur.length - 1].end });
+        cur = [];
+      }
+      pi++;
+    }
+    if (cur.length && w.start - cur[0].start > 15) {
+      segs.push({ words: cur, start: cur[0].start, end: cur[cur.length - 1].end });
+      cur = [];
+    }
+    cur.push(w);
+  }
+  if (cur.length) segs.push({ words: cur, start: cur[0].start, end: cur[cur.length - 1].end });
+
 
   // 2) 逐句算
   const out = [];
@@ -69,11 +124,8 @@ export function analyzeProsody(samples, words) {
 
   const allSemis = frames.filter(f => f.voiced && f.st != null).map(f => f.st).sort((a, b) => a - b);
 
-  const pauses = [];
-  for (let i = 1; i < out.length; i++) {
-    const g = out[i].start - out[i - 1].end;
-    if (g >= 0.3) pauses.push({ at: out[i - 1].end, dur: g });
-  }
+  // 停顿统计直接用刚才从能量里找到的静音段（≥0.3 秒），不含"句太长被强制断开"的接缝
+  const pauses = pauseRuns.filter(r => r.dur >= 0.3).map(r => ({ at: r.start, dur: r.dur }));
 
   // 说话时长按能量算：词级时间戳会漏字，能量不会。
   const spanStart = out.length ? out[0].start : 0;
@@ -222,14 +274,14 @@ function finalSlope(semis, voiced, end) {
   return den > 0 ? num / den : null;
 }
 
-function segmentByGaps(words, gapSec, maxLen, silenceRatio = () => 1) {
+function segmentByGaps(words, gapSec, maxLen, isPause = () => true) {
   const segs = [];
   let cur = [];
   for (const w of words) {
     const prev = cur[cur.length - 1];
     if (cur.length) {
       const gap = w.start - prev.end;
-      const silent = gap > gapSec && silenceRatio(prev.end, w.start) >= 0.7;
+      const silent = gap > gapSec && isPause(prev.end, w.start);
       const tooLong = w.start - cur[0].start > maxLen;
       if (silent || tooLong) {
         segs.push({ words: cur, start: cur[0].start, end: prev.end });
