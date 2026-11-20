@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>动作与神情观察 · Speech Coach 原型</title>
+<link rel="stylesheet" href="../app.css">
+<link rel="stylesheet" href="./prototype.css">
+</head>
+<body>
+<header>
+  <div class="topline">
+    <h1>动作与神情观察</h1>
+    <span class="badge">prototype</span>
+  </div>
+  <p class="sub">用浏览器本地的 MediaPipe 模型看手势、姿态、微笑和头部朝向。<strong>视频不会离开你的电脑。</strong>结果只用于观察，不进正式评分。</p>
+</header>
+
+<main>
+  <section id="drop" class="drop">
+    <input type="file" id="file" accept="video/*" hidden>
+    <p class="drop-title">把演讲视频拖到这里，或 <button id="pick" class="link" type="button">选择文件</button></p>
+    <p class="hint">mp4 / mov / webm · 建议 3 分钟内 · 本地处理</p>
+  </section>
+
+  <section id="panel" class="panel hidden">
+    <video id="video" controls muted playsinline></video>
+    <p id="fileinfo" class="hint"></p>
+    <div class="row">
+      <button id="analyze" class="primary" type="button" disabled>开始分析</button>
+      <button id="reset" class="ghost" type="button" hidden>重新选择</button>
+    </div>
+    <div id="progress" class="bar" hidden><div id="barfill"></div></div>
+    <p id="status" class="hint">先选择视频。</p>
+  </section>
+
+  <section id="results" class="hidden">
+    <p class="summary" id="summary"></p>
+    <div id="warnings" class="warnings hidden"></div>
+
+    <div class="metrics">
+      <article class="panel metric-card">
+        <h2>身体动作</h2>
+        <div class="metric"><b id="pose-rate">–</b><span>检测率</span><small>能稳定找到人体、且人物够大的帧占比</small></div>
+        <div class="metric"><b id="gesture-amp">–</b><span>手势幅度</span><small>手腕移动速度，单位：肩宽/秒</small></div>
+        <div class="metric"><b id="gesture-rate">–</b><span>手势次数</span><small>明显手腕动作，次/分钟</small></div>
+        <div class="metric"><b id="sway">–</b><span>身体晃动</span><small>肩中点移动速度，单位：肩宽/秒</small></div>
+        <div class="metric"><b id="lean">–</b><span>前后/侧向倾斜</span><small>肩中点相对髋中点的偏移，% 肩宽</small></div>
+        <div class="metric"><b id="hand-above">–</b><span>手高于肩</span><small>至少一只手高于肩线的帧占比</small></div>
+        <div class="metric"><b id="shoulder-tilt">–</b><span>肩线倾斜</span><small>两肩连线相对水平的角度</small></div>
+      </article>
+
+      <article class="panel metric-card">
+        <h2>面部与头部</h2>
+        <div class="metric"><b id="face-rate">–</b><span>检测率</span><small>能稳定找到人脸、且脸够大的帧占比</small></div>
+        <div class="metric"><b id="smile">–</b><span>微笑强度</span><small>0–100，来自嘴部 blendshape</small></div>
+        <div class="metric"><b id="smile-share">–</b><span>微笑占比</span><small>微笑强度超过 0.25 的帧占比</small></div>
+        <div class="metric"><b id="brow">–</b><span>抬眉强度</span><small>0–100，眉毛上扬的程度</small></div>
+        <div class="metric"><b id="jaw">–</b><span>张嘴程度</span><small>0–100，说话时通常会升高</small></div>
+        <div class="metric"><b id="blink">–</b><span>眨眼频率</span><small>次/分钟；采样率低，只作参考</small></div>
+        <div class="metric"><b id="yaw">–</b><span>头部左右偏移</span><small>鼻子相对两眼中点的偏移，% 眼距</small></div>
+        <div class="metric"><b id="pitch">–</b><span>头部俯仰偏移</span><small>相对本人中位姿态的偏移，% 脸高</small></div>
+        <div class="metric"><b id="roll">–</b><span>头部侧倾</span><small>两眼角连线的倾斜角，度</small></div>
+        <div class="metric"><b id="facing">–</b><span>朝前占比</span><small>头左右/俯仰/侧倾都较小的帧占比</small></div>
+        <div class="metric"><b id="expr-var">–</b><span>表情变化</span><small>微笑强度的标准差，越大越有起伏</small></div>
+      </article>
+    </div>
+
+    <section class="panel">
+      <h2>采样帧</h2>
+      <canvas id="canvas"></canvas>
+      <p class="hint">这是最后一个采样帧。蓝线是肩、肘、腕、髋；粉线是脸轮廓、眼睛和嘴。</p>
+    </section>
+
+    <section class="panel">
+      <h2>怎么读</h2>
+      <ul class="notes">
+        <li>这些是观察指标，不是分数。单个指标不能判断演讲好坏。</li>
+        <li>显示 <code>–</code> 表示没有足够数据，不等于 0：人物太小、手腕/髋部不在画面、或脸太小都会这样。先看上面的警告。</li>
+        <li>“手势幅度”是手腕移动速度除以肩宽，抵消了人和镜头远近的差异；它不区分紧张的小抖和有力的手势。</li>
+        <li>“头部左右偏移”用鼻子相对两眼中点的位置估计，不是精确角度；镜头角度和镜头畸变会影响它。</li>
+        <li>“朝前占比”是相对本人中位姿态的稳定程度，不是眼动仪，也不能证明在看镜头。</li>
+        <li>表情受文化、个人风格和疲劳影响；不要用微笑多少来判断真诚。</li>
+        <li>采样率约 1–2 帧/秒，快速手势和眨眼会被漏掉；这是原型，不是测量仪。</li>
+      </ul>
+    </section>
+
+    <div class="row">
+      <button id="download" class="ghost" type="button">下载 JSON</button>
+    </div>
+  </section>
+</main>
+
+<footer>Speech Coach prototype · 本地 MediaPipe Pose + Face Landmarker · 不进入正式评分</footer>
+<script type="module" src="./prototype.js"></script>
+</body>
+</html>
