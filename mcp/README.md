@@ -18,9 +18,7 @@ Agent:  # Speech Coach report: pitch-final.mp4
 
 ## Install
 
-> Not on npm yet. Until `0.1.0` is published, point the client at the local file instead:
-> `node /path/to/speech-coach/src/server.js`. The commands below are what it will look like
-> once the package is up.
+Published on npm as [`speech-coach`](https://www.npmjs.com/package/speech-coach). No clone, no build:
 
 **Claude Code**
 
@@ -78,7 +76,7 @@ Six dimensions, weights depending on `scene` + `format`:
 Targets are calibrated against published phonetic literature (Foulke 1968 on comprehension speed,
 Goldman-Eisler 1968 on pause length, Aoyama et al. 2016 on pitch range, Tielen 1989 on pitch
 variation) and against 12 three-minute-thesis winners measured with this same pipeline. The web
-version's `SCORING.md` documents every formula and every source.
+version's [`SCORING.md`](https://github.com/chxjames/speech-coach/blob/main/SCORING.md) documents every formula and every source.
 
 ## Accuracy and limits
 

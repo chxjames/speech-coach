@@ -1,6 +1,6 @@
 {
   "name": "speech-coach",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server: analyse a speech video locally (whisper + prosody) and return a scored report",
   "type": "module",
   "bin": {
@@ -14,6 +14,24 @@
   },
   "license": "MIT",
   "author": "Chenghao Xu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chxjames/speech-coach.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://chxjames.github.io/speech-coach/",
+  "bugs": {
+    "url": "https://github.com/chxjames/speech-coach/issues"
+  },
+  "keywords": [
+    "mcp",
+    "speech",
+    "presentation",
+    "public-speaking",
+    "whisper",
+    "prosody",
+    "speech-analysis"
+  ],
   "dependencies": {
     "@huggingface/transformers": "^4.3.2",
     "@modelcontextprotocol/sdk": "^1.32.2",
