@@ -3,6 +3,10 @@
   "version": "0.1.1",
   "description": "MCP server: analyse a speech video locally (whisper + prosody) and return a scored report",
   "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "smoke": "node test/smoke.js"
+  },
   "bin": {
     "speech-coach": "src/server.js"
   },

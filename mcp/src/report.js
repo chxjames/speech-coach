@@ -10,7 +10,8 @@ export const fmtTime = (sec) => {
 const DIM_ORDER = ['content', 'pacing', 'prosody', 'clarity', 'body', 'production'];
 
 const bar = (v, max, width = 10) => {
-  const n = max > 0 ? Math.round(Math.max(0, Math.min(1, v / max)) * width) : 0;
+  if (!Number.isFinite(v) || !Number.isFinite(max) || max <= 0) return '·'.repeat(width);
+  const n = Math.round(Math.max(0, Math.min(1, v / max)) * width);
   return '█'.repeat(n) + '·'.repeat(width - n);
 };
 
@@ -22,11 +23,15 @@ export function buildReport({ name, s, m, video, scored, findings, lang = 'en' }
   lines.push(T('title', { name: name || T('untitled') }));
   lines.push('');
   lines.push(T('total', {
-    total: scored.total.toFixed(1),
+    total: scored.total == null ? '–' : `${scored.total.toFixed(1)} / ${scored.totalMax}`,
     scene: T('scene.' + scored.scene),
     profile: T('profile.' + scored.profile),
     level: T('level.' + scored.level),
   }));
+  if (scored.coverage < 0.999) {
+    const missing = DIM_ORDER.filter((k) => !scored.dims[k].available).map((k) => T('dim.' + k));
+    lines.push(T('coverage', { pct: Math.round(scored.coverage * 100), missing: missing.join(T('list.sep')) }));
+  }
   lines.push('');
 
   // 六维
@@ -36,11 +41,13 @@ export function buildReport({ name, s, m, video, scored, findings, lang = 'en' }
   lines.push('| --- | --- | --- |');
   for (const k of DIM_ORDER) {
     const d = scored.dims[k];
-    lines.push(`| ${T('dim.' + k)} | ${d.got.toFixed(1)} / ${d.max} | \`${bar(d.got, d.max)}\` |`);
+    const got = d.got;
+    lines.push(`| ${T('dim.' + k)} | ${got == null ? '–' : `${got.toFixed(1)} / ${d.max}`} | ${got == null ? '–' : bar(got, d.max)} |`);
   }
   lines.push('');
 
-  // 硬指标
+  // 硬指标：没有音频就整段跳过，不能让报告在 s.finals 上崩。
+  if (s && s.finals) {
   lines.push(T('metrics'));
   lines.push('');
   lines.push(T('words', { words: s.words, sec: s.speechSec.toFixed(1) }));
@@ -61,6 +68,10 @@ export function buildReport({ name, s, m, video, scored, findings, lang = 'en' }
     }));
   }
   lines.push('');
+  } else {
+    lines.push(T('note.no-audio'));
+    lines.push('');
+  }
 
   // 建议
   if (findings.length) {
@@ -73,7 +84,7 @@ export function buildReport({ name, s, m, video, scored, findings, lang = 'en' }
   }
 
   // 逐句
-  if (s.segments?.length) {
+  if (s?.segments?.length) {
     lines.push(T('segs'));
     lines.push('');
     lines.push(`| ${T('th.time')} | ${T('th.text')} | ${T('th.dur')} | ${T('th.pitch')} | ${T('th.ending')} |`);
@@ -89,7 +100,7 @@ export function buildReport({ name, s, m, video, scored, findings, lang = 'en' }
   }
 
   // 文字稿
-  if (s.text) {
+  if (s?.text) {
     lines.push(T('transcript'));
     lines.push('');
     lines.push('```');
@@ -105,17 +116,25 @@ export function buildReport({ name, s, m, video, scored, findings, lang = 'en' }
   lines.push(T('sum.title'));
   lines.push('');
   const total = scored.total;
+  if (total == null) {
+    lines.push(`- ${T('sum.verdict.incomplete')}`);
+    return lines.join('\n');
+  }
+
   const verdict = total >= 85 ? 'high' : total >= 70 ? 'solid' : total >= 55 ? 'mid' : 'low';
   lines.push(`- ${T('sum.verdict.' + verdict)}`);
 
   const best = DIM_ORDER
+    .filter((k) => scored.dims[k].available && Number.isFinite(scored.dims[k].got))
     .map((k) => ({ k, share: scored.dims[k].got / scored.dims[k].max }))
     .sort((a, b) => b.share - a.share)[0];
-  lines.push(`- ${T('sum.keep', {
-    dim: T('dim.' + best.k),
-    got: scored.dims[best.k].got.toFixed(1),
-    max: scored.dims[best.k].max,
-  })}`);
+  if (best) {
+    lines.push(`- ${T('sum.keep', {
+      dim: T('dim.' + best.k),
+      got: scored.dims[best.k].got.toFixed(1),
+      max: scored.dims[best.k].max,
+    })}`);
+  }
 
   if (findings.length) {
     lines.push(`- ${T('sum.fix')}`);
@@ -127,7 +146,7 @@ export function buildReport({ name, s, m, video, scored, findings, lang = 'en' }
     lines.push(`- ${T('sum.nothing')}`);
   }
 
-  lines.push(`- ${T('sum.numbers', {
+  if (s && Number.isFinite(s.wpm)) lines.push(`- ${T('sum.numbers', {
     wpm: Math.round(s.wpm),
     artic: Math.round(s.articWpm),
     pause: s.pauseAvg.toFixed(2),

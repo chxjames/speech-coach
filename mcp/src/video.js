@@ -53,7 +53,8 @@ export async function analyzeVideo(file, { samples = 24 } = {}) {
   });
 
   if (!frames.length) throw new Error('这个视频读不出画面（可能是纯音频文件）');
-  const lumas = frames.map(f => f.luma).sort((a, b) => a - b);
+  // 曝光看主体：用中间 60% 区域，避免窗户/天花板把整帧亮度带偏。
+  const lumas = frames.map(f => f.centerLuma).sort((a, b) => a - b);
   const motions = frames.map(f => f.motion);
   const size = statSync(file).size;
   return {

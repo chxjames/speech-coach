@@ -4,15 +4,15 @@ An MCP server that watches a speech recording and hands back a scored coaching r
 
 Give it a video or audio file on your machine. It decodes the audio, transcribes it with Whisper,
 measures pace, pauses, pitch range, sentence endings, softener density and the frame, and returns a
-markdown report: score out of 100, six dimensions, the biggest losses first, a sentence table and the
-full transcript.
+markdown report: a six-dimension scorecard, the biggest losses first, a sentence table and the
+full transcript. The total is shown against the dimensions actually measured, with a coverage line.
 
 Everything runs locally. The file is never uploaded.
 
 ```
 You:    analyze ~/Desktop/pitch-final.mp4, it is a 3-minute startup pitch
 Agent:  # Speech Coach report: pitch-final.mp4
-        **Score 74.2 / 100** (scene: pitch · format: on camera · level: Intermediate)
+        **74.2 / 100** (scene: pitch · format: at a desk · level: Intermediate)
         ...
 ```
 
@@ -53,7 +53,7 @@ Requires Node 20+. `ffmpeg` ships with the package, so nothing else has to be in
 | `path` | string | — | Video/audio file: `.mp4 .mov .webm .m4a .wav` |
 | `scene` | `homework` `final` `contest` `interview` `defense` `pitch` | `final` | What the talk is for. Changes the weights: a defense leans on content, an interview on clarity, a competition on pace and prosody. |
 | `level` | `starter` `solid` `pro` | `solid` | How strict the targets are. |
-| `format` | `camera` `stage` | `camera` | Webcam/phone at your desk, or standing at a lectern. |
+| `format` | `desk` `stage` | `desk` | Webcam/phone at a desk or online, or standing at a lectern. `camera` is the old alias for `desk`. |
 | `lang` | `zh` `en` | `en` | Language of the report. |
 | `content` | 0–100 | 72 | Your own score for content and structure. The only dimension a machine cannot judge. |
 | `composition` | 0–100 | 50 | Your own score for framing and lighting. |
@@ -70,13 +70,15 @@ Six dimensions, weights depending on `scene` + `format`:
 | Pace & rhythm | net words per minute, average pause, longest sentence |
 | Prosody & presence | pitch range in semitones, sentence-to-sentence variation, share of statements that fall |
 | Clarity | articulation rate, softener density (`like / just / actually / really / pretty`) |
-| Body language | motion in the frame |
+| Camera motion | motion in the frame (not actual body language) |
 | Camera & production | resolution, bitrate, exposure, plus your `composition` |
 
-Targets are calibrated against published phonetic literature (Foulke 1968 on comprehension speed,
+Stage targets are calibrated against published phonetic literature (Foulke 1968 on comprehension speed,
 Goldman-Eisler 1968 on pause length, Aoyama et al. 2016 on pitch range, Tielen 1989 on pitch
-variation) and against 12 three-minute-thesis winners measured with this same pipeline. The web
-version's [`SCORING.md`](https://github.com/chxjames/speech-coach/blob/main/SCORING.md) documents every formula and every source.
+variation) and against 12 three-minute-thesis winners measured with this same pipeline. Desk targets are
+provisional: there is no labeled set of desk-speaking experts yet. The web version's
+[`SCORING.md`](https://github.com/chxjames/speech-coach/blob/main/SCORING.md) documents every formula,
+the coverage rules and the limitations.
 
 ## Accuracy and limits
 

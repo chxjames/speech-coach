@@ -1,6 +1,6 @@
 # Speech Coach
 
-**Drop in a video of a talk. Get a score from 0 to 100 and a short list of what to fix first.**
+**Drop in a video of a talk. Get a six-dimension scorecard and a short list of what to fix first.**
 
 Everything runs inside your browser. The video never leaves your computer — no upload, no server, no account, no API key.
 
@@ -29,7 +29,7 @@ three things** that would win back the most points — instead of a 40-item list
 
 ## What you get
 
-- **A score out of 100** across six dimensions, weighted for your format (webcam vs. stage).
+- **A six-dimension scorecard** weighted for your format (desk vs. stage), with the total shown against the dimensions actually measured — not silently filled to 100.
 - **A findings list ordered by points lost** — the top item is the one to work on this week.
 - **A sentence-by-sentence table**: text, pitch range, sentence-final contour, loudness, speaking rate.
 - **The full transcript**, so you can check what you actually said.
@@ -52,7 +52,7 @@ python -m http.server 8792
 Opening `index.html` by double-clicking will **not** work: under `file://` the browser refuses to start the
 Web Workers that do the transcription. Use the local server (or the hosted page).
 
-The interface switches between Chinese and English; every report, this README and `SCORING.md` are bilingual.
+The interface switches between Chinese and English; the two READMEs are bilingual. `SCORING.md` is written in Chinese, with the formulas and sources it documents.
 
 ## Use it from an agent (MCP)
 
@@ -83,7 +83,7 @@ The agent calls `analyze_speech` and receives the same Markdown report the web p
 | `path` | — | a video file on the machine running the server |
 | `scene` | `final` | `homework`, `final`, `contest`, `interview`, `defense`, `pitch` |
 | `level` | `solid` | `starter`, `solid`, `pro` |
-| `format` | `camera` | `camera` (webcam) or `stage` (lectern) |
+| `format` | `desk` | `desk` (webcam/online) or `stage` (lectern); `camera` is the old alias for `desk` |
 | `lang` | `en` | language of the report: `en` or `zh` |
 | `content` | 72 | your own 0–100 score for content and structure |
 | `composition` | 50 | your own 0–100 score for framing and lighting |
@@ -99,12 +99,16 @@ The first run downloads the Whisper weights (~80 MB for `base.en`) into the npm 
 | Pace & rhythm | 20 | 20 | Net speaking rate + average pause length |
 | Pitch & expressiveness | 15 | 20 | Pitch range, sentence-to-sentence variation, sentence-final rise/fall |
 | Clarity | 15 | 15 | Articulation rate + softener density (`like`, `just`, `actually`, …) |
-| Body language | 5 | 15 | How much the picture moves (automatic, coarse) |
+| Camera motion | 5 | 15 | How much the picture moves (automatic, coarse; not body language) |
 | Production & framing | 20 | 5 | Resolution, bitrate, exposure (automatic) + **manual** framing slider |
 
-Pick **webcam** when you are talking into a camera, **stage** when you are standing at a podium: the same
-measurements are reweighted, because a room-filling talk leans on the voice and the body, while a laptop video
-leans on framing and sound quality.
+Pick **desk** when you are talking into a camera at a desk or online, **stage** when you are standing at a
+podium: the same measurements are reweighted and the target pauses/rates differ, because a room-filling talk
+leans on the voice and the body, while a laptop video leans on framing and sound quality.
+
+The total always comes with a coverage line. If the file has no picture, or no speech can be measured, those
+dimensions are shown as `–` and the total is over the measured maximum (for example 80.5) — it is not silently
+filled with full marks. A total is only given when content, pace, prosody and clarity are all measured.
 
 The automatic part cannot tell whether what you said was worth saying. That is why content is a slider, not a
 guess: the tool is a mirror, not a judge.
@@ -123,9 +127,9 @@ competition standards:
 ## Scenes
 
 A 3-minute contest talk and a job interview are not judged the same way, so the tool also asks **what the
-talk is for**. The scene multiplies the six weights and overrides the targets that matter in that room:
+talk is for**. The scene multiplies the six weights and moves the targets that matter in that room:
 
-| Scene | Leans on | Overrides |
+| Scene | Leans on | Moves the targets |
 |---|---|---|
 | Class assignment | clarity, body | slower pace, longer sentences forgiven, fillers forgiven |
 | Final presentation | content | shorter sentences, fewer fillers |
@@ -137,8 +141,8 @@ talk is for**. The scene multiplies the six weights and overrides the targets th
 Scene, level and format are independent: **format** sets the base weights, **scene** bends them and moves
 the targets, **level** sets how forgiving those targets are.
 
-Every formula, the target values, and the paper or dataset each value comes from (Foulke 1968,
-Goldman-Eisler 1968, Laver 1994, Aoyama 2016, Tielen 1989, …) are in [SCORING.md](SCORING.md). That file also lists, honestly,
+Every formula and target value is in [SCORING.md](SCORING.md). That file also lists the literature that
+shaped the targets (Foulke 1968, Goldman-Eisler 1968, Laver 1994, Aoyama 2016, Tielen 1989) and, honestly,
 the values that are my own estimates rather than published figures.
 
 ## How it works
@@ -168,7 +172,7 @@ four chunks, and each worker returns word-level timestamps that are stitched bac
 - **Do not compare rate numbers across models.** `base.en` hears roughly 7 % more words than `large-v3` on the
   same clip, so articulation rate comes out about 10 % higher. Compare two takes made with the same model.
 - **Content and framing are your own scores.** The tool cannot judge an argument.
-- **Body language is coarse.** It measures how much the picture moves; it cannot see a nervous tic.
+- **Camera motion is coarse.** It measures how much the picture moves; it cannot see a nervous tic.
 - **Long videos** (over roughly 20 minutes) can exhaust browser memory while the audio is decoded.
 - **Accents**: the `.en` models are trained mostly on clear American English. For other English accents the
   transcript degrades; the prosody numbers survive better than the words.

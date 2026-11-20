@@ -66,7 +66,8 @@ export async function analyzeVideo(file, { samples = 24 } = {}) {
   URL.revokeObjectURL(url);
   v.remove();
 
-  const lumas = frames.map(f => f.luma).sort((a, b) => a - b);
+  // 曝光看主体：用中间 60% 区域，避免窗户/天花板把整帧亮度带偏。
+  const lumas = frames.map(f => f.centerLuma).sort((a, b) => a - b);
   const motions = frames.map(f => f.motion);
   return {
     width: vw,

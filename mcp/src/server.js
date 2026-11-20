@@ -10,7 +10,7 @@ import { decodeToMono16k } from './audio.js';
 import { transcribe } from './asr.js';
 import { analyzeProsody } from './prosody.js';
 import { analyzeVideo } from './video.js';
-import { score, findings, weightsFor, SCENES, LEVELS, PROFILES } from './score.js';
+import { score, findings, weightsFor, SCENES, LEVELS, FORMATS, normalizeFormat } from './score.js';
 import { buildReport } from './report.js';
 
 const log = (...a) => console.error('[speech-coach]', ...a);
@@ -32,16 +32,18 @@ install: https://chxjames.github.io/speech-coach/`);
 
 const SCENE_IDS = Object.keys(SCENES);
 const LEVEL_IDS = Object.keys(LEVELS);
-const PROFILE_IDS = Object.keys(PROFILES);
+const FORMAT_IDS = [...Object.keys(FORMATS), 'camera']; // camera is the old alias for desk
 
-const server = new McpServer({ name: 'speech-coach', version: '0.1.0' });
+const server = new McpServer({ name: 'speech-coach', version: '0.1.1' });
 
 server.tool(
   'analyze_speech',
   [
     'Analyze a recorded speech (video or audio file on this machine) and return a markdown coaching report:',
-    'score out of 100, six dimensions, hard measurements (rate, pauses, pitch range, sentence endings,',
+    'a six-dimension scorecard, hard measurements (rate, pauses, pitch range, sentence endings,',
     'softener density, framing), the biggest losses first, a sentence table and the transcript.',
+    'The total is shown against the dimensions actually measured, with a coverage line; a missing picture or',
+    'audio track is not scored as full marks.',
     '',
     'Runs fully local: ffmpeg decodes the file, Whisper (via transformers.js) transcribes it, pitch and',
     'pauses are measured from the waveform. Nothing is uploaded.',
@@ -54,7 +56,7 @@ server.tool(
     path: z.string().describe('Absolute path (or path relative to the current working directory) of the .mp4/.mov/.webm/.m4a/.wav file.'),
     scene: z.enum(SCENE_IDS).default('final').describe('What the talk is for. Weights differ: contest pushes pace and prosody, defense pushes content, interview pushes clarity.'),
     level: z.enum(LEVEL_IDS).default('solid').describe('How strict the targets are.'),
-    format: z.enum(PROFILE_IDS).default('camera').describe('camera = recorded on a webcam or phone facing you; stage = standing at a lectern on stage.'),
+    format: z.enum(FORMAT_IDS).default('desk').describe('desk = webcam or phone at a desk / online class; stage = standing at a lectern; camera = old alias for desk.'),
     lang: z.enum(['zh', 'en']).default('en').describe('Language of the report itself.'),
     content: z.number().min(0).max(100).default(72).describe('Your human score for content and structure, 0-100. Only you can judge this; the rest is measured.'),
     composition: z.number().min(0).max(100).default(50).describe('Your human score for framing and lighting, 0-100 (ignored for stage).'),
@@ -110,13 +112,14 @@ server.tool(
     let video = null;
     try { video = await analyzeVideo(file); } catch (e) { log('video probe failed:', e.message); }
 
-    const W = weightsFor(args.format, args.scene);
+    const fmt = normalizeFormat(args.format);
+    const W = weightsFor(fmt, args.scene);
     const manual = {
       content: (args.content / 100) * W.content,
       composition: (args.composition / 100) * Math.max(0, W.production - Math.min(12, W.production)),
     };
-    const scored = score({ s: prosody.summary, video, profile: args.format, level: args.level, scene: args.scene, manual });
-    const tips = findings({ s: prosody.summary, video, scored, level: args.level, scene: args.scene });
+    const scored = score({ s: prosody.summary, video, format: fmt, level: args.level, scene: args.scene, manual });
+    const tips = findings({ s: prosody.summary, video, scored, format: fmt, level: args.level, scene: args.scene });
 
     await report(95, 100, 'writing report');
     const md = buildReport({

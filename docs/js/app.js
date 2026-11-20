@@ -140,8 +140,8 @@ function render() {
   const profile = $('profile').value;
   const level = $('level').value;
   const scene = $('scene').value;
-  state.scored = score({ s: state.prosody.summary, video: state.video, profile, level, scene, manual: state.manual });
-  state.tips = findings({ s: state.prosody.summary, video: state.video, scored: state.scored, level, scene });
+  state.scored = score({ s: state.prosody.summary, video: state.video, format: profile, level, scene, manual: state.manual });
+  state.tips = findings({ s: state.prosody.summary, video: state.video, scored: state.scored, format: profile, level, scene });
 
   $('result').classList.remove('hidden');
   renderScorecard();
@@ -152,27 +152,38 @@ function render() {
 function renderScorecard() {
   const s = state.prosody.summary;
   const sc = state.scored;
+  const unavailable = (reason) => t('note.unavailable.' + (reason || 'no-data'));
   const notes = {
-    content: t('note.content'),
+    content: sc.dims.content.estimated ? t('note.content.estimated') : t('note.content'),
     pacing: t('note.pacing', { wpm: Math.round(s.wpm), pause: s.pauseAvg.toFixed(2) }),
     prosody: t('note.prosody', { range: s.rangeSt != null ? s.rangeSt.toFixed(1) : '—', rising: s.finals.rising }),
     clarity: t('note.clarity', { rate: s.fillerRate.toFixed(1) }),
-    body: t('note.body', { motion: (state.video?.motionAvg ?? 0).toFixed(1) }),
-    production: state.video ? `${state.video.width}×${state.video.height}` : '—',
+    body: state.video ? t('note.body', { motion: (state.video.motionAvg ?? 0).toFixed(1) }) : unavailable('no-video'),
+    production: state.video ? `${state.video.width}×${state.video.height}` : unavailable('no-video'),
   };
+
+  const missing = Object.entries(sc.dims).filter(([, d]) => !d.available).map(([k]) => t('dim.' + k));
+  const coverage = sc.coverage < 0.999
+    ? `<div class="note" style="margin:6px 0 0">${t('score.coverage', { pct: Math.round(sc.coverage * 100), missing: missing.join(t('list.sep')) })}</div>`
+    : '';
 
   const el = $('scorecard');
   el.innerHTML = `
-    <div class="total"><b>${sc.total.toFixed(1)}</b><span>/ 100</span></div>
+    <div class="total"><b>${sc.total == null ? '–' : sc.total.toFixed(1)}</b><span>/ ${sc.totalMax == null ? 100 : Math.round(sc.totalMax)}</span></div>
+    ${coverage}
     <div class="dims">
-      ${Object.entries(sc.dims).map(([k, d]) => `
+      ${Object.entries(sc.dims).map(([k, d]) => {
+        const available = d.available && d.got != null;
+        const got = available ? d.got : null;
+        return `
         <div class="dim">
-          <div class="name"><span>${t('dim.' + k)}</span><span>${d.got.toFixed(1)} / ${d.max}</span></div>
-          <div class="mini"><i style="width:${Math.round(d.got / d.max * 100)}%"></i></div>
-          <div class="note">${notes[k]}</div>
+          <div class="name"><span>${t('dim.' + k)}</span><span>${available ? `${got.toFixed(1)} / ${d.max}` : `– / ${d.max}`}</span></div>
+          <div class="mini"><i style="width:${available ? Math.round(got / d.max * 100) : 0}%"></i></div>
+          <div class="note">${available ? notes[k] : unavailable(d.reason)}</div>
           ${k === 'content' ? `<input type="range" min="0" max="${d.max}" step="0.5" value="${state.manual.content ?? Math.round(d.max * 0.72)}" data-manual="content" style="width:100%;margin-top:8px">` : ''}
-          ${k === 'production' && sc.compBudget > 0 ? `<input type="range" min="0" max="${sc.compBudget}" step="0.5" value="${state.manual.composition ?? sc.compBudget / 2}" data-manual="composition" style="width:100%;margin-top:8px">` : ''}
-        </div>`).join('')}
+          ${k === 'production' && available && sc.compBudget > 0 ? `<input type="range" min="0" max="${sc.compBudget}" step="0.5" value="${state.manual.composition ?? sc.compBudget / 2}" data-manual="composition" style="width:100%;margin-top:8px">` : ''}
+        </div>`;
+      }).join('')}
     </div>
     ${state.tips.length ? `<div class="dims">${state.tips.map((tip, i) => `
       <div class="dim"><div class="name"><span>${t('tip.n', { n: i + 1 })}</span><span>${t('tip.cost', { x: tip.lost.toFixed(1) })}</span></div>

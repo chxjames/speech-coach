@@ -7,6 +7,7 @@ export function buildReport({ file, s, video, scored, tips, words, transcript })
   const name = file?.name || t('report.untitled');
   const L = [];
   const bar = (got, max) => {
+    if (!Number.isFinite(got) || !Number.isFinite(max) || max <= 0) return '░'.repeat(10);
     const n = Math.max(0, Math.min(10, Math.round(got / max * 10)));
     return '█'.repeat(n) + '░'.repeat(10 - n);
   };
@@ -14,18 +15,23 @@ export function buildReport({ file, s, video, scored, tips, words, transcript })
   L.push(t('report.title', { name }));
   L.push('');
   L.push(t('report.total', {
-    total: scored.total.toFixed(1),
+    total: scored.total == null ? '–' : `${scored.total.toFixed(1)} / ${scored.totalMax}`,
     scene: t('scene.' + (scored.scene || 'final')),
     profile: t('profile.' + scored.profile),
     level: t('level.' + scored.level),
   }));
+  if (scored.coverage < 0.999) {
+    const missing = Object.entries(d).filter(([, v]) => !v.available).map(([k]) => t('dim.' + k));
+    L.push(t('report.coverage', { pct: Math.round(scored.coverage * 100), missing: missing.join(t('list.sep')) }));
+  }
   L.push('');
   L.push(t('report.dims'));
   L.push('');
   L.push(`| ${t('report.th.dim')} | ${t('report.th.score')} | ${t('report.th.scale')} |`);
   L.push('|---|---|---|');
   for (const k of ['content', 'pacing', 'prosody', 'clarity', 'body', 'production']) {
-    L.push(`| ${t('dim.' + k)} | ${d[k].got.toFixed(1)} / ${d[k].max} | ${bar(d[k].got, d[k].max)} |`);
+    const got = d[k].got;
+    L.push(`| ${t('dim.' + k)} | ${got == null ? '–' : `${got.toFixed(1)} / ${d[k].max}`} | ${got == null ? '–' : bar(got, d[k].max)} |`);
   }
   L.push('');
   L.push(t('report.metrics'));
@@ -90,6 +96,11 @@ function summaryLines(scored, tips, m) {
   const total = scored.total;
   const out = [];
 
+  if (total == null) {
+    out.push(`- ${t('sum.verdict.incomplete')}`);
+    return out.join('\n');
+  }
+
   const key = total >= 85 ? 'sum.verdict.high'
     : total >= 70 ? 'sum.verdict.solid'
     : total >= 55 ? 'sum.verdict.mid'
@@ -97,8 +108,11 @@ function summaryLines(scored, tips, m) {
   out.push(`- ${t(key)}`);
 
   const order = ['content', 'pacing', 'prosody', 'clarity', 'body', 'production'];
-  const share = order.map(k => ({ k, v: d[k].max ? d[k].got / d[k].max : 0 })).sort((a, b) => b.v - a.v);
-  if (share[0].v > 0.6) {
+  const share = order
+    .filter(k => d[k].available && Number.isFinite(d[k].got))
+    .map(k => ({ k, v: d[k].max ? d[k].got / d[k].max : 0 }))
+    .sort((a, b) => b.v - a.v);
+  if (share.length && share[0].v > 0.6) {
     out.push(`- ${t('sum.keep', {
       dim: t('dim.' + share[0].k),
       got: d[share[0].k].got.toFixed(1),
@@ -114,7 +128,7 @@ function summaryLines(scored, tips, m) {
     out.push(`- ${t('sum.nothing')}`);
   }
 
-  out.push(`- ${t('sum.numbers', {
+  if (m && Number.isFinite(m.wpm)) out.push(`- ${t('sum.numbers', {
     wpm: Math.round(m.wpm),
     artic: Math.round(m.articWpm),
     pause: m.pauseAvg.toFixed(1),
