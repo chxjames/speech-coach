@@ -7,7 +7,7 @@ import { buildReport, download } from './report.js';
 import { t, hasKey, setLang, getLang, onLangChange } from './i18n.js';
 
 const $ = (id) => document.getElementById(id);
-const state = { file: null, words: [], transcript: '', prosody: null, video: null, scored: null, tips: [], manual: {} };
+const state = { file: null, model: null, words: [], transcript: '', prosody: null, video: null, scored: null, tips: [], manual: {} };
 
 // 手机上默认用更小的模型、更少的并行，否则要等太久
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || innerWidth < 720;
@@ -80,9 +80,11 @@ $('run').onclick = async () => {
     const { samples, duration } = await decodeToMono16k(state.file, (m) => setProgress(0.05, m));
     setProgress(0.1, 'progress.audio', { dur: duration.toFixed(1) });
 
+    state.model = $('model').value;   // 报告里要写明用的哪个模型
     const { words, text } = await transcribe(samples, {
       model: $('model').value,
-      language: $('model').value.endsWith('.en') ? 'en' : undefined,
+      // 多语言选项在界面上写的是“中文用这个”。transformers.js 不会自动识别语言，必须明确传。
+      language: $('model').value.endsWith('.en') ? 'en' : 'chinese',
       workers: Number($('workers').value),
       onProgress: (p) => {
         if (p.stage === 'load') {
@@ -162,7 +164,12 @@ function renderScorecard() {
     production: state.video ? `${state.video.width}×${state.video.height}` : unavailable('no-video'),
   };
 
-  const missing = Object.entries(sc.dims).filter(([, d]) => !d.available).map(([k]) => t('dim.' + k));
+  const missing = Object.entries(sc.dims)
+    .filter(([, d]) => !d.available || d.partial)
+    .map(([k, d]) => (d.available ? t('dim.partial', { dim: t('dim.' + k) }) : t('dim.' + k)));
+  if (!sc.silenceKnown && sc.dims.pacing.available) {
+    notes.pacing = t('note.silence', { n: (sc.pausesPerMin ?? 0).toFixed(1) });
+  }
   const coverage = sc.coverage < 0.999
     ? `<div class="note" style="margin:6px 0 0">${t('score.coverage', { pct: Math.round(sc.coverage * 100), missing: missing.join(t('list.sep')) })}</div>`
     : '';
@@ -224,6 +231,7 @@ function currentReport() {
   return buildReport({
     file: state.file, s: state.prosody, video: state.video,
     scored: state.scored, tips: state.tips, words: state.words, transcript: state.transcript,
+    model: state.model,
   });
 }
 

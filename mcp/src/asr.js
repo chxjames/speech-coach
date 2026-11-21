@@ -19,9 +19,19 @@ export async function loadModel(model) {
   return asrPromise;
 }
 
+// .en 模型只认英文，不接受 language。多语言模型要明确传语言：transformers.js 不做语言识别，
+// 不传就默认英文，非英语录音会被翻译成英文而不是转写。
+export function asrOptions(model, language) {
+  const opts = { return_timestamps: 'word', chunk_length_s: 30 };
+  if (!/\.en$/i.test(model) && language) opts.language = language;
+  return opts;
+}
+
 export async function transcribe(samples, {
-  model = 'Xenova/whisper-base.en',
-  language = 'en',
+  model = 'Xenova/whisper-small.en',
+  // 录音里说的语言（'chinese'、'zh' 都行）。多语言模型必须明确给：transformers.js 不会自动识别，
+  // 不给就按英文处理，中文录音会被直接翻译成英文。.en 模型只认英文，忽略这个参数。
+  language = null,
   chunkSeconds = 30,
   onProgress = () => {},
 } = {}) {
@@ -41,9 +51,7 @@ export async function transcribe(samples, {
   const texts = [];
   for (let i = 0; i < chunks.length; i++) {
     const c = chunks[i];
-    const opts = { return_timestamps: 'word', chunk_length_s: 30 };
-    if (!/\.en$/.test(model)) opts.language = language;
-    const res = await asr(c.samples, opts);
+    const res = await asr(c.samples, asrOptions(model, language));
     for (const ch of res.chunks || []) {
       const ts = ch.timestamp || [null, null];
       const text = (ch.text || '').trim();

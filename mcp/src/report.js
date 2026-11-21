@@ -1,5 +1,6 @@
 // 生成 markdown 报告。和网页版 js/report.js 同一套结构，只是从 t() 取文案。
 import { t } from './i18n.js';
+import { REFERENCE_MODEL } from './score.js';
 
 export const fmtTime = (sec) => {
   const m = Math.floor(sec / 60);
@@ -15,7 +16,9 @@ const bar = (v, max, width = 10) => {
   return '█'.repeat(n) + '·'.repeat(width - n);
 };
 
-export function buildReport({ name, s, m, video, scored, findings, lang = 'en' }) {
+const shortModel = (id) => String(id || '').replace(/^.*\//, '');
+
+export function buildReport({ name, s, m, video, scored, findings, model = REFERENCE_MODEL, lang = 'en' }) {
   const T = (k, v) => t(k, v, lang);
   const L = lang;
   const lines = [];
@@ -29,9 +32,14 @@ export function buildReport({ name, s, m, video, scored, findings, lang = 'en' }
     level: T('level.' + scored.level),
   }));
   if (scored.coverage < 0.999) {
-    const missing = DIM_ORDER.filter((k) => !scored.dims[k].available).map((k) => T('dim.' + k));
+    const missing = DIM_ORDER
+      .filter((k) => !scored.dims[k].available || scored.dims[k].partial)
+      .map((k) => (scored.dims[k].available ? T('dim.partial', { dim: T('dim.' + k) }) : T('dim.' + k)));
     lines.push(T('coverage', { pct: Math.round(scored.coverage * 100), missing: missing.join(T('list.sep')) }));
   }
+  if (!scored.silenceKnown && scored.dims.pacing.available) lines.push(T('silence', { n: (scored.pausesPerMin ?? 0).toFixed(1) }));
+  lines.push(T('rubric', { v: scored.rubric, model: shortModel(model) }));
+  if (model !== REFERENCE_MODEL) lines.push(T('model.mismatch', { ref: shortModel(REFERENCE_MODEL) }));
   lines.push('');
 
   // 六维

@@ -57,7 +57,8 @@ Requires Node 20+. `ffmpeg` ships with the package, so nothing else has to be in
 | `lang` | `zh` `en` | `en` | Language of the report. |
 | `content` | 0–100 | 72 | Your own score for content and structure. The only dimension a machine cannot judge. |
 | `composition` | 0–100 | 50 | Your own score for framing and lighting. |
-| `model` | string | `Xenova/whisper-base.en` | Whisper model id. `small.en` is more accurate and ~3× slower; use a multilingual id such as `Xenova/whisper-small` for non-English audio. |
+| `model` | string | `Xenova/whisper-small.en` | Whisper model id. The targets are calibrated with `small.en`; `base.en` is ~3× faster but hears more words, so its rates come out higher. Use a multilingual id such as `Xenova/whisper-small` for non-English audio, together with `speechLang`. |
+| `speechLang` | string | — | Language spoken in the recording, e.g. `zh`. Required with a multilingual model for non-English audio: the transcriber does not detect the language and otherwise translates the speech into English. |
 | `maxSeconds` | number | all | Only analyze the first N seconds. |
 
 ## What the score means

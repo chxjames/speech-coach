@@ -10,7 +10,7 @@ import { decodeToMono16k } from './audio.js';
 import { transcribe } from './asr.js';
 import { analyzeProsody } from './prosody.js';
 import { analyzeVideo } from './video.js';
-import { score, findings, weightsFor, SCENES, LEVELS, FORMATS, normalizeFormat } from './score.js';
+import { score, findings, weightsFor, SCENES, LEVELS, FORMATS, normalizeFormat, REFERENCE_MODEL } from './score.js';
 import { buildReport } from './report.js';
 
 const log = (...a) => console.error('[speech-coach]', ...a);
@@ -34,7 +34,7 @@ const SCENE_IDS = Object.keys(SCENES);
 const LEVEL_IDS = Object.keys(LEVELS);
 const FORMAT_IDS = [...Object.keys(FORMATS), 'camera']; // camera is the old alias for desk
 
-const server = new McpServer({ name: 'speech-coach', version: '0.1.1' });
+const server = new McpServer({ name: 'speech-coach', version: '0.2.0' });
 
 server.tool(
   'analyze_speech',
@@ -60,7 +60,8 @@ server.tool(
     lang: z.enum(['zh', 'en']).default('en').describe('Language of the report itself.'),
     content: z.number().min(0).max(100).default(72).describe('Your human score for content and structure, 0-100. Only you can judge this; the rest is measured.'),
     composition: z.number().min(0).max(100).default(50).describe('Your human score for framing and lighting, 0-100 (ignored for stage).'),
-    model: z.string().default('Xenova/whisper-base.en').describe('Whisper model id. base.en is fast; small.en is more accurate but ~3x slower; use a multilingual id such as Xenova/whisper-small for non-English audio.'),
+    model: z.string().default(REFERENCE_MODEL).describe('Whisper model id. The default, small.en, is the model the targets were calibrated with; base.en is ~3x faster but hears more words, so rates come out higher; use a multilingual id such as Xenova/whisper-small for non-English audio, together with speechLang.'),
+    speechLang: z.string().optional().describe('Language spoken in the recording, e.g. "zh" or "chinese". Needed with a multilingual model for non-English audio: the transcriber does not detect the language and otherwise translates the speech into English. Ignored by .en models.'),
     maxSeconds: z.number().min(5).max(1200).optional().describe('Only analyze the first N seconds.'),
   },
   async (args, extra) => {
@@ -74,7 +75,7 @@ server.tool(
 
     const lang = args.lang;
     const isEnglishModel = /\.en$/i.test(args.model);
-    const language = isEnglishModel ? 'english' : undefined;
+    const language = isEnglishModel ? 'english' : (args.speechLang || 'english');
 
     log('decoding', file);
     const decoded = await decodeToMono16k(file);
@@ -129,6 +130,7 @@ server.tool(
       video,
       scored,
       findings: tips,
+      model: args.model,
       lang,
     });
     return { content: [{ type: 'text', text: md }] };

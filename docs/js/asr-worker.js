@@ -30,7 +30,7 @@ self.onmessage = async (e) => {
     if (msg.type === 'transcribe') {
       const { id, offset, samples } = msg;
       const opts = { return_timestamps: 'word', chunk_length_s: 30 };
-      if (modelId && !/\.en$/.test(modelId)) opts.language = msg.language || undefined;
+      if (modelId && !/\.en$/.test(modelId) && msg.language) opts.language = msg.language;
 
       const res = await asr(samples, opts);
       const words = (res.chunks || [])

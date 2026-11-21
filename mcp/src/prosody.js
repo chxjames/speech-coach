@@ -141,10 +141,12 @@ export function analyzeProsody(samples, words) {
   const allText = out.map(s => s.text).join(' ');
   const fillers = (allText.match(FILLERS) || []);
 
-  const medians = out.map(s => s.medianPitch).filter(x => x);
+  // 只用测到音高的句子：无声句的 medianPitch 是 null，JS 里 null - x = -x，
+  // 留着会让每个无声句贡献 median² 把标准差撑爆。
+  const medians = out.map(s => s.medianPitch).filter(x => Number.isFinite(x) && x > 0);
   const medOfMedians = medians.length ? median(medians) : null;
-  const sd = out.length > 1 && medOfMedians
-    ? Math.sqrt(out.reduce((a, s) => a + Math.pow(s.medianPitch - medOfMedians, 2), 0) / out.length)
+  const sd = medians.length > 1 && medOfMedians
+    ? Math.sqrt(medians.reduce((a, p) => a + Math.pow(p - medOfMedians, 2), 0) / medians.length)
     : 0;
   const sdSt = medOfMedians ? 12 * Math.log2((medOfMedians + sd) / medOfMedians) : 0;
 
@@ -223,12 +225,26 @@ function pitchTrack(samples) {
     const w = [voiced[i - 1].st, voiced[i].st, voiced[i + 1].st].sort((x, y) => x - y);
     if (Math.abs(voiced[i].st - w[1]) > 3) voiced[i].st = w[1];
   }
-  // 相对上一个有效帧跳超过 7 半音的，判为八度错误，不参与音域统计
-  let prev = null;
+  // 偏离"附近帧的中位数"超过 7 半音的，判为八度错误，不参与音域统计。
+  // 以前拿"上一个有效帧"做参照：第一帧若本身就是八度错误，后面所有正常帧都会被
+  // 判错、整段音高被扔掉。中位数参照不会被单个坏帧带偏；中间隔了长静音就重新开始。
+  const OCT_JUMP = 7, OCT_WIN = 25, OCT_GAP = 0.5;
+  let block = [];
+  const flush = () => {
+    const st = block.map(f => f.st);
+    for (let i = 0; i < block.length; i++) {
+      const lo = Math.max(0, i - OCT_WIN), hi = Math.min(st.length, i + OCT_WIN + 1);
+      const near = st.slice(lo, hi).sort((x, y) => x - y);
+      const ref = near[Math.floor(near.length / 2)];
+      if (Math.abs(st[i] - ref) > OCT_JUMP) block[i].st = null;
+    }
+    block = [];
+  };
   for (const f of voiced) {
-    if (prev != null && Math.abs(f.st - prev) > 7) f.st = null;
-    else prev = f.st;
+    if (block.length && f.t - block[block.length - 1].t > OCT_GAP) flush();
+    block.push(f);
   }
+  flush();
   return frames;
 }
 
@@ -263,7 +279,8 @@ function bestLag(x, start, minLag, maxLag) {
 
 // 句尾 0.6 秒的半音/秒斜率（用 voiced 帧做线性回归）
 function finalSlope(semis, voiced, end) {
-  const tail = voiced.filter(f => f.t >= end - 0.6);
+  // st == null 是判为八度错误的帧，不能当 0 参与回归
+  const tail = voiced.filter(f => f.t >= end - 0.6 && f.st != null);
   if (tail.length < 3) return null;
   const xs = tail.map(f => f.t), ys = tail.map(f => f.st);
   const n = xs.length;

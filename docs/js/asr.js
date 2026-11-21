@@ -8,7 +8,9 @@ const OVERLAP = 2;   // 秒。接缝处多听 2 秒，避免一个词被切在�
 
 export async function transcribe(samples, {
   model = 'Xenova/whisper-small.en',
-  language = 'en',
+  // 录音里说的语言（'chinese'、'zh' 都行）。多语言模型必须明确给：transformers.js 不会自动识别，
+  // 不给就按英文处理，中文录音会被直接翻译成英文。.en 模型只认英文，忽略这个参数。
+  language = null,
   workers = 4,
   chunkSeconds = 30,
   onProgress = () => {},

@@ -1,7 +1,10 @@
 import { fmtTime } from './audio.js';
 import { t } from './i18n.js';
+import { REFERENCE_MODEL } from './score.js';
 
-export function buildReport({ file, s, video, scored, tips, words, transcript }) {
+const shortModel = (id) => String(id || '').replace(/^.*\//, '');
+
+export function buildReport({ file, s, video, scored, tips, words, transcript, model = REFERENCE_MODEL }) {
   const d = scored.dims;
   const m = s.summary;            // 标量指标都在 summary 里
   const name = file?.name || t('report.untitled');
@@ -21,9 +24,14 @@ export function buildReport({ file, s, video, scored, tips, words, transcript })
     level: t('level.' + scored.level),
   }));
   if (scored.coverage < 0.999) {
-    const missing = Object.entries(d).filter(([, v]) => !v.available).map(([k]) => t('dim.' + k));
+    const missing = Object.entries(d)
+      .filter(([, v]) => !v.available || v.partial)
+      .map(([k, v]) => (v.available ? t('dim.partial', { dim: t('dim.' + k) }) : t('dim.' + k)));
     L.push(t('report.coverage', { pct: Math.round(scored.coverage * 100), missing: missing.join(t('list.sep')) }));
   }
+  if (!scored.silenceKnown && d.pacing.available) L.push(t('report.silence', { n: (scored.pausesPerMin ?? 0).toFixed(1) }));
+  L.push(t('report.rubric', { v: scored.rubric, model: shortModel(model) }));
+  if (model !== REFERENCE_MODEL) L.push(t('report.model.mismatch', { ref: shortModel(REFERENCE_MODEL) }));
   L.push('');
   L.push(t('report.dims'));
   L.push('');

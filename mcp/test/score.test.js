@@ -59,27 +59,29 @@ test('weights sum to 100 for every format and scene', () => {
   }
 });
 
-test('stage contest targets keep the stage base', () => {
+const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
+
+test('stage contest targets keep the stage base (en-1.0: the 3MT winner medians)', () => {
   const t = mcp.targetsFor('stage', 'contest', 'solid');
-  assert.equal(t.rate[0], 160);
-  assert.equal(t.pause[0], 0.7);
-  assert.equal(t.longMax, 10);
-  assert.equal(t.range[0], 9.5);
-  assert.equal(t.sd[0], 1.9);
-  assert.equal(t.artic[0], 190);
-  assert.equal(t.filler[0], 1.5);
-  assert.equal(t.motion, 8);
+  near(t.rate[0], 160);
+  near(t.pause[0], 0.83);
+  near(t.longMax, 14);
+  near(t.range[0], 11.5);
+  near(t.sd[0], 1.9);
+  near(t.artic[0], 195);
+  near(t.filler[0], 1.5);
+  near(t.motion, 8);
 });
 
 test('desk contest targets keep the desk base', () => {
   const t = mcp.targetsFor('desk', 'contest', 'solid');
-  assert.equal(t.rate[0], 170);
-  assert.equal(t.pause[0], 0.45);
-  assert.equal(t.longMax, 8);
-  assert.equal(t.range[0], 7.5);
-  assert.ok(Math.abs(t.sd[0] - 1.6) < 1e-9);
-  assert.equal(t.artic[0], 200);
-  assert.equal(t.motion, 4);
+  near(t.rate[0], 170);
+  near(t.pause[0], 0.59);
+  near(t.longMax, 12);
+  near(t.range[0], 9.0);
+  near(t.sd[0], 1.6);
+  near(t.artic[0], 210);
+  near(t.motion, 4);
 });
 
 test('complete score has all dimensions and totalMax 100', () => {
@@ -161,4 +163,61 @@ test('report survives a missing picture', () => {
   const text = buildReport({ name: 'no-video.mp4', s: goodS(), video: null, scored, findings: [], lang: 'en' });
   assert.match(text, /Coverage 76%/);
   assert.match(text, /\| Camera motion \| – \| – \|/);
+});
+
+test('a perfect speaker gets full marks on every measured dimension, in every scene', () => {
+  // 每个子项都打在目标值上：节奏/语调/清晰应拿到场景调整后的满权重，
+  // 而不是被固定的原始满分（20/20/15）卡住或轻易顶格。
+  for (const format of Object.keys(mcp.FORMATS)) {
+    for (const scene of Object.keys(mcp.SCENES)) {
+      const L = mcp.targetsFor(format, scene, 'solid');
+      const s = {
+        ...goodS(),
+        wpm: L.rate[0], pauseAvg: L.pause[0], longest: L.longMax - 1,
+        rangeSt: L.range[0], segSdSt: L.sd[0],
+        finals: { falling: 20, flat: 0, rising: 0 },
+        articWpm: L.artic[0], fillerRate: L.filler[0],
+      };
+      const r = mcp.score({ s, video: goodVideo(), format, scene, level: 'solid', manual: { content: 1 } });
+      for (const k of ['pacing', 'prosody', 'clarity']) {
+        assert.ok(Math.abs(r.dims[k].got - r.dims[k].max) < 1e-9,
+          `${format}/${scene} ${k}: got ${r.dims[k].got} of ${r.dims[k].max}`);
+      }
+    }
+  }
+});
+
+test('half the raw points is half the scene weight', () => {
+  const W = mcp.weightsFor('desk', 'interview');
+  const L = mcp.targetsFor('desk', 'interview', 'solid');
+  // fillerRate 远离目标 → cleanScore ≈ 0；articScore 满 8 分，原始 8/15
+  const s = { ...goodS(), articWpm: L.artic[0], fillerRate: 50 };
+  const r = mcp.score({ s, video: goodVideo(), format: 'desk', scene: 'interview', level: 'solid' });
+  assert.ok(Math.abs(r.dims.clarity.got - 8 / 15 * W.clarity) < 1e-6, String(r.dims.clarity.got));
+});
+
+test('fewer fillers than the target is never penalised', () => {
+  const r0 = mcp.score(input({ s: { ...goodS(), fillerRate: 0 } }));
+  const r1 = mcp.score(input({ s: { ...goodS(), fillerRate: 1.5 } }));
+  assert.equal(r0.dims.clarity.got, r1.dims.clarity.got);
+});
+
+test('when silence cannot be measured, pause, longest and articulation are not scored', () => {
+  // 180 秒只找到 3 处停顿：背景音乐/重压缩的录音。
+  const s = { ...goodS(), spanSec: 180, pauses: 3, longest: 15.5, articWpm: 300 };
+  const r = mcp.score(input({ s }));
+  assert.equal(r.silenceKnown, false);
+  assert.equal(r.dims.pacing.partial, 'silence');
+  assert.equal(r.dims.clarity.partial, 'silence');
+  assert.deepEqual(Object.keys(r.dims.pacing.parts), ['rateScore']);
+  const keys = mcp.findings({ s, video: goodVideo(), scored: r, format: 'stage', scene: 'contest' }).map((f) => f.key);
+  assert.ok(!keys.includes('tip.longest') && !keys.includes('tip.artic'), keys.join(','));
+  // 同样的录音换成正常停顿，就照常计分
+  const ok = mcp.score(input({ s: { ...s, pauses: 30 } }));
+  assert.equal(ok.silenceKnown, true);
+  assert.equal(ok.dims.pacing.partial, undefined);
+});
+
+test('short clips are not judged by the pause-rate gate', () => {
+  assert.equal(mcp.silenceReliable({ ...goodS(), spanSec: 20, pauses: 0 }), true);
 });

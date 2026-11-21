@@ -87,9 +87,10 @@ The agent calls `analyze_speech` and receives the same Markdown report the web p
 | `lang` | `en` | language of the report: `en` or `zh` |
 | `content` | 72 | your own 0–100 score for content and structure |
 | `composition` | 50 | your own 0–100 score for framing and lighting |
-| `model` | `whisper-base.en` | any Whisper id Transformers.js can load |
+| `model` | `whisper-small.en` | any Whisper id Transformers.js can load. The targets are calibrated with `small.en`; `base.en` is ~3× faster but its rates come out higher |
+| `speechLang` | — | language spoken in the recording (e.g. `zh`), needed with a multilingual model such as `whisper-small` |
 
-The first run downloads the Whisper weights (~80 MB for `base.en`) into the npm cache; later runs reuse them.
+The first run downloads the Whisper weights (~250 MB for `small.en`) into the npm cache; later runs reuse them.
 
 ## What it measures
 
@@ -133,10 +134,12 @@ talk is for**. The scene multiplies the six weights and moves the targets that m
 |---|---|---|
 | Class assignment | clarity, body | slower pace, longer sentences forgiven, fillers forgiven |
 | Final presentation | content | shorter sentences, fewer fillers |
-| Competition (3MT-style) | expressiveness, body | calibrated on 12 3MT winners: 160 wpm, 0.70 s pauses, 10 s max sentence, 9.5-semitone range |
-| Job interview | clarity | 8 s max sentence, 0.8 fillers per 100 words — brevity over flourish |
+| Competition (3MT-style) | expressiveness, body | set to the medians of 12 3MT winners measured with this engine: 160 wpm, 0.83 s pauses, 14 s max sentence, 11.5-semitone range |
+| Job interview | clarity | 12 s max sentence, 0.8 fillers per 100 words — brevity over flourish |
 | Thesis defence | content ×1.35 | slower is fine (145 wpm), terminology allowed |
-| Pitch / demo | expressiveness ×1.2 | 0.60 s pauses, wide pitch range, almost no fillers |
+| Pitch / demo | expressiveness ×1.2 | 0.73 s pauses, wide pitch range, almost no fillers |
+
+The numbers above are the stage targets at solid level; desk targets are in [SCORING.md](SCORING.md).
 
 Scene, level and format are independent: **format** sets the base weights, **scene** bends them and moves
 the targets, **level** sets how forgiving those targets are.
