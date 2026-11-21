@@ -82,10 +82,13 @@ agent 会调用 `analyze_speech`，拿回来的就是网页版能下载的那份
 | `lang` | `en` | 报告语言：`en` 或 `zh` |
 | `content` | 72 | 你自己给内容与结构的 0–100 分 |
 | `composition` | 50 | 你自己给构图与灯光的 0–100 分 |
-| `model` | `whisper-small.en` | 任意 Transformers.js 能加载的 Whisper 模型。目标值按 `small.en` 校准；`base.en` 快约 3 倍，但语速会偏高 |
-| `speechLang` | — | 录音里说的语言（如 `zh`），用 `whisper-small` 这类多语言模型时必须给 |
+| `model` | `whisper-large-v3-turbo` | 任意能给出词级时间戳的 Whisper 模型。默认的这个是目标值校准用的模型，也是测过的里最准的（词错率 3.6%，`small.en` 是 6.4%）；`small.en` 快约 1.5 倍，总分通常差 1–3 分 |
+| `speechLang` | `english` | 录音里说的语言（如 `zh`），默认模型是多语言的，非英语录音要给 |
 
-第一次运行会把 Whisper 权重（`small.en` 约 250 MB）下载到 npm 缓存，之后直接复用。
+第一次运行会把 Whisper 权重（large-v3-turbo 约 1.1 GB）下载到缓存，之后直接复用。
+
+网页版用的是 `small.en`：网页同时开 4 个 Worker，每个都要加载一份模型，4 份 large-v3-turbo 浏览器装不下。
+报告里会写明用的模型；在 18 个参考样本上，它的总分和参考模型的中位差 1 分（90% 在 3 分以内）。
 
 ## 它会看什么
 

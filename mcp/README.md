@@ -57,7 +57,7 @@ Requires Node 20+. `ffmpeg` ships with the package, so nothing else has to be in
 | `lang` | `zh` `en` | `en` | Language of the report. |
 | `content` | 0–100 | 72 | Your own score for content and structure. The only dimension a machine cannot judge. |
 | `composition` | 0–100 | 50 | Your own score for framing and lighting. |
-| `model` | string | `Xenova/whisper-small.en` | Whisper model id. The targets are calibrated with `small.en`; `base.en` is ~3× faster but hears more words, so its rates come out higher. Use a multilingual id such as `Xenova/whisper-small` for non-English audio, together with `speechLang`. |
+| `model` | string | `onnx-community/whisper-large-v3-turbo_timestamped` | Whisper model id. The default (large-v3-turbo, ~1.1 GB) is what the targets are calibrated with and the most accurate tested: 3.6 % word error rate against large-v3, vs 6.4 % for `small.en`. `Xenova/whisper-small.en` is ~1.5× faster; its totals are usually within 1–3 points. The model must return word timestamps (use a `_timestamped` export). For non-English audio also pass `speechLang`. |
 | `speechLang` | string | — | Language spoken in the recording, e.g. `zh`. Required with a multilingual model for non-English audio: the transcriber does not detect the language and otherwise translates the speech into English. |
 | `maxSeconds` | number | all | Only analyze the first N seconds. |
 

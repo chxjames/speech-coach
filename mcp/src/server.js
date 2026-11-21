@@ -60,7 +60,7 @@ server.tool(
     lang: z.enum(['zh', 'en']).default('en').describe('Language of the report itself.'),
     content: z.number().min(0).max(100).default(72).describe('Your human score for content and structure, 0-100. Only you can judge this; the rest is measured.'),
     composition: z.number().min(0).max(100).default(50).describe('Your human score for framing and lighting, 0-100 (ignored for stage).'),
-    model: z.string().default(REFERENCE_MODEL).describe('Whisper model id. The default, small.en, is the model the targets were calibrated with; base.en is ~3x faster but hears more words, so rates come out higher; use a multilingual id such as Xenova/whisper-small for non-English audio, together with speechLang.'),
+    model: z.string().default(REFERENCE_MODEL).describe('Whisper model id. The default, large-v3-turbo (timestamped export, ~1.1 GB), is the model the targets were calibrated with and the most accurate tested (3.6% WER vs 6.4% for small.en). Xenova/whisper-small.en is ~1.5x faster and usually within 1-3 points. The model must return word timestamps. For non-English audio also pass speechLang.'),
     speechLang: z.string().optional().describe('Language spoken in the recording, e.g. "zh" or "chinese". Needed with a multilingual model for non-English audio: the transcriber does not detect the language and otherwise translates the speech into English. Ignored by .en models.'),
     maxSeconds: z.number().min(5).max(1200).optional().describe('Only analyze the first N seconds.'),
   },

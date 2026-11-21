@@ -7,13 +7,15 @@ env.useBrowserCache = false;
 
 const OVERLAP = 2;
 let asrPromise = null;
-let asrModel = null;
+let asrKey = null;
 
-export async function loadModel(model) {
-  if (asrModel === model && asrPromise) return asrPromise;
-  asrModel = model;
+// dtype：'q8'（默认，8 位量化）或 'fp32' 等；也可以是 { encoder_model, decoder_model_merged } 分别指定。
+export async function loadModel(model, dtype = 'q8') {
+  const key = `${model}|${JSON.stringify(dtype)}`;
+  if (asrKey === key && asrPromise) return asrPromise;
+  asrKey = key;
   asrPromise = pipeline('automatic-speech-recognition', model, {
-    dtype: 'q8',
+    dtype,
     progress_callback: () => {},
   });
   return asrPromise;
@@ -32,10 +34,11 @@ export async function transcribe(samples, {
   // 录音里说的语言（'chinese'、'zh' 都行）。多语言模型必须明确给：transformers.js 不会自动识别，
   // 不给就按英文处理，中文录音会被直接翻译成英文。.en 模型只认英文，忽略这个参数。
   language = null,
+  dtype = 'q8',
   chunkSeconds = 30,
   onProgress = () => {},
 } = {}) {
-  const asr = await loadModel(model);
+  const asr = await loadModel(model, dtype);
   const SR = 16000;
 
   const chunks = [];

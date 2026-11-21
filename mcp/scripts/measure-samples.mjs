@@ -5,6 +5,7 @@
 //   node scripts/measure-samples.mjs out.json <group>=<file> [<group>=<file> ...]
 //
 // 视频本身不进仓库（大多是网上的演讲），进仓库的只有测量值。
+// 默认用 score.js 的 REFERENCE_MODEL；评估别的模型时可以用环境变量 SC_MODEL / SC_DTYPE 覆盖。
 import { writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { basename, extname } from 'node:path';
 import { decodeToMono16k } from '../src/audio.js';
@@ -23,7 +24,11 @@ const round = (x, d = 3) => (Number.isFinite(x) ? Math.round(x * 10 ** d) / 10 *
 const roundAll = (o) => JSON.parse(JSON.stringify(o, (k, v) => (typeof v === 'number' ? round(v) : v)));
 
 // 断点续跑：已经量过的样本直接跳过
-const done = existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : { model: REFERENCE_MODEL, samples: [] };
+const MODEL = process.env.SC_MODEL || REFERENCE_MODEL;
+const DTYPE = process.env.SC_DTYPE || 'q8';
+const LANGUAGE = /\.en$/i.test(MODEL) ? null : 'english';
+const done = existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : { model: MODEL, dtype: DTYPE, samples: [] };
+if (done.model !== MODEL) { console.error(`${out} was measured with ${done.model}, not ${MODEL}`); process.exit(1); }
 const have = new Set(done.samples.map((s) => s.id));
 
 for (const item of items) {
@@ -33,7 +38,7 @@ for (const item of items) {
   if (have.has(id)) { console.error(`skip ${id}`); continue; }
   const t0 = Date.now();
   const { samples } = await decodeToMono16k(file);
-  const { words } = await transcribe(samples, { model: REFERENCE_MODEL });
+  const { words } = await transcribe(samples, { model: MODEL, dtype: DTYPE, language: LANGUAGE });
   const p = analyzeProsody(samples, words);
   let video = null;
   try { video = await analyzeVideo(file); } catch (e) { console.error(`  video probe failed: ${e.message}`); }

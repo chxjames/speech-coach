@@ -1,0 +1,635 @@
+{
+ "model": "Xenova/whisper-small.en",
+ "samples": [
+  {
+   "id": "3mt-PczCM3GwB4Q",
+   "group": "3mt",
+   "durationSec": 181.325,
+   "summary": {
+    "words": 405,
+    "speechSec": 143.38,
+    "spanSec": 175.36,
+    "voicedSec": 85.24,
+    "pauses": 33,
+    "pauseAvg": 0.884,
+    "pauseMax": 1.48,
+    "wpm": 138.572,
+    "articWpm": 169.48,
+    "medianPitch": 250.662,
+    "rangeSt": 11.522,
+    "segSdSt": 1.925,
+    "finals": {
+     "falling": 4,
+     "flat": 0,
+     "rising": 6
+    },
+    "fillers": 8,
+    "fillerRate": 1.975,
+    "longest": 12.18,
+    "segments": 34
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 364.892,
+    "lumaMedian": 70.596,
+    "motionAvg": 21.889
+   }
+  },
+  {
+   "id": "Av8OqMMzQo",
+   "group": "3mt",
+   "durationSec": 192.308,
+   "summary": {
+    "words": 432,
+    "speechSec": 137.44,
+    "spanSec": 183.54,
+    "voicedSec": 119.06,
+    "pauses": 30,
+    "pauseAvg": 0.608,
+    "pauseMax": 1.14,
+    "wpm": 141.223,
+    "articWpm": 188.591,
+    "medianPitch": 247.398,
+    "rangeSt": 12.713,
+    "segSdSt": 2.701,
+    "finals": {
+     "falling": 13,
+     "flat": 0,
+     "rising": 10
+    },
+    "fillers": 5,
+    "fillerRate": 1.157,
+    "longest": 15.22,
+    "segments": 31
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 379.992,
+    "lumaMedian": 147.435,
+    "motionAvg": 50.134
+   }
+  },
+  {
+   "id": "BRBQsdyYfG8",
+   "group": "3mt",
+   "durationSec": 236.101,
+   "summary": {
+    "words": 555,
+    "speechSec": 186.46,
+    "spanSec": 220.08,
+    "voicedSec": 123.22,
+    "pauses": 31,
+    "pauseAvg": 0.818,
+    "pauseMax": 1.2,
+    "wpm": 151.309,
+    "articWpm": 178.591,
+    "medianPitch": 227.323,
+    "rangeSt": 29.11,
+    "segSdSt": 3.613,
+    "finals": {
+     "falling": 10,
+     "flat": 0,
+     "rising": 6
+    },
+    "fillers": 4,
+    "fillerRate": 0.721,
+    "longest": 16.02,
+    "segments": 34
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 390.729,
+    "lumaMedian": 127.396,
+    "motionAvg": 51.406
+   }
+  },
+  {
+   "id": "DE9x4rX5qmM",
+   "group": "3mt",
+   "durationSec": 198.74,
+   "summary": {
+    "words": 527,
+    "speechSec": 130.5,
+    "spanSec": 193.06,
+    "voicedSec": 100.16,
+    "pauses": 1,
+    "pauseAvg": 0.66,
+    "pauseMax": 0.66,
+    "wpm": 163.783,
+    "articWpm": 242.299,
+    "medianPitch": 184.81,
+    "rangeSt": 12.325,
+    "segSdSt": 2.011,
+    "finals": {
+     "falling": 6,
+     "flat": 1,
+     "rising": 4
+    },
+    "fillers": 7,
+    "fillerRate": 1.328,
+    "longest": 15.52,
+    "segments": 13
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 361.902,
+    "lumaMedian": 96.744,
+    "motionAvg": 12.097
+   }
+  },
+  {
+   "id": "NJh-5mm-8g0",
+   "group": "3mt",
+   "durationSec": 173.244,
+   "summary": {
+    "words": 471,
+    "speechSec": 122.84,
+    "spanSec": 155.76,
+    "voicedSec": 88.12,
+    "pauses": 43,
+    "pauseAvg": 0.829,
+    "pauseMax": 1.58,
+    "wpm": 181.433,
+    "articWpm": 230.055,
+    "medianPitch": 195.223,
+    "rangeSt": 7.64,
+    "segSdSt": 1.55,
+    "finals": {
+     "falling": 9,
+     "flat": 0,
+     "rising": 5
+    },
+    "fillers": 13,
+    "fillerRate": 2.76,
+    "longest": 7.8,
+    "segments": 42
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 267.317,
+    "lumaMedian": 101.655,
+    "motionAvg": 10.498
+   }
+  },
+  {
+   "id": "XxT9C61E2VE",
+   "group": "3mt",
+   "durationSec": 174.73,
+   "summary": {
+    "words": 542,
+    "speechSec": 120.82,
+    "spanSec": 174.21,
+    "voicedSec": 121.68,
+    "pauses": 7,
+    "pauseAvg": 0.514,
+    "pauseMax": 0.76,
+    "wpm": 186.671,
+    "articWpm": 269.161,
+    "medianPitch": 132.094,
+    "rangeSt": 13.301,
+    "segSdSt": 0.944,
+    "finals": {
+     "falling": 3,
+     "flat": 1,
+     "rising": 7
+    },
+    "fillers": 6,
+    "fillerRate": 1.107,
+    "longest": 15.24,
+    "segments": 14
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 347.885,
+    "lumaMedian": 103.711,
+    "motionAvg": 16.959
+   }
+  },
+  {
+   "id": "c8GEpWd3g_8",
+   "group": "3mt",
+   "durationSec": 179.397,
+   "summary": {
+    "words": 370,
+    "speechSec": 127.76,
+    "spanSec": 164.5,
+    "voicedSec": 88.98,
+    "pauses": 40,
+    "pauseAvg": 0.939,
+    "pauseMax": 1.58,
+    "wpm": 134.954,
+    "articWpm": 173.763,
+    "medianPitch": 233.182,
+    "rangeSt": 8.444,
+    "segSdSt": 1.349,
+    "finals": {
+     "falling": 11,
+     "flat": 0,
+     "rising": 8
+    },
+    "fillers": 1,
+    "fillerRate": 0.27,
+    "longest": 8.02,
+    "segments": 41
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 355.16,
+    "lumaMedian": 90.226,
+    "motionAvg": 63.781
+   }
+  },
+  {
+   "id": "dh0pJdgY6Lc",
+   "group": "3mt",
+   "durationSec": 198.229,
+   "summary": {
+    "words": 582,
+    "speechSec": 126.14,
+    "spanSec": 193.72,
+    "voicedSec": 122.54,
+    "pauses": 21,
+    "pauseAvg": 0.867,
+    "pauseMax": 3.3,
+    "wpm": 180.26,
+    "articWpm": 276.835,
+    "medianPitch": 208.749,
+    "rangeSt": 11.994,
+    "segSdSt": 1.807,
+    "finals": {
+     "falling": 3,
+     "flat": 2,
+     "rising": 4
+    },
+    "fillers": 2,
+    "fillerRate": 0.344,
+    "longest": 15.4,
+    "segments": 22
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 364.603,
+    "lumaMedian": 95.422,
+    "motionAvg": 46.939
+   }
+  },
+  {
+   "id": "drhYTZUhZMQ",
+   "group": "3mt",
+   "durationSec": 161.843,
+   "summary": {
+    "words": 418,
+    "speechSec": 124.4,
+    "spanSec": 156.9,
+    "voicedSec": 88.7,
+    "pauses": 28,
+    "pauseAvg": 0.839,
+    "pauseMax": 1.92,
+    "wpm": 159.847,
+    "articWpm": 201.608,
+    "medianPitch": 213.515,
+    "rangeSt": 11.202,
+    "segSdSt": 2.273,
+    "finals": {
+     "falling": 10,
+     "flat": 0,
+     "rising": 5
+    },
+    "fillers": 9,
+    "fillerRate": 2.153,
+    "longest": 14.06,
+    "segments": 28
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 317.611,
+    "lumaMedian": 143.123,
+    "motionAvg": 18.224
+   }
+  },
+  {
+   "id": "g44qNS_nxfU",
+   "group": "3mt",
+   "durationSec": 172.896,
+   "summary": {
+    "words": 429,
+    "speechSec": 147.06,
+    "spanSec": 165.26,
+    "voicedSec": 99.54,
+    "pauses": 21,
+    "pauseAvg": 0.695,
+    "pauseMax": 1.08,
+    "wpm": 155.755,
+    "articWpm": 175.031,
+    "medianPitch": 232.166,
+    "rangeSt": 10.288,
+    "segSdSt": 1.114,
+    "finals": {
+     "falling": 3,
+     "flat": 0,
+     "rising": 7
+    },
+    "fillers": 0,
+    "fillerRate": 0,
+    "longest": 12.82,
+    "segments": 22
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 272.09,
+    "lumaMedian": 116.284,
+    "motionAvg": 57.698
+   }
+  },
+  {
+   "id": "pvjPzsLIyGw",
+   "group": "3mt",
+   "durationSec": 204.777,
+   "summary": {
+    "words": 543,
+    "speechSec": 151.86,
+    "spanSec": 197.08,
+    "voicedSec": 102.38,
+    "pauses": 28,
+    "pauseAvg": 0.83,
+    "pauseMax": 1.3,
+    "wpm": 165.314,
+    "articWpm": 214.54,
+    "medianPitch": 110.499,
+    "rangeSt": 11.862,
+    "segSdSt": 2.09,
+    "finals": {
+     "falling": 6,
+     "flat": 0,
+     "rising": 2
+    },
+    "fillers": 2,
+    "fillerRate": 0.368,
+    "longest": 13.92,
+    "segments": 29
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 460.981,
+    "lumaMedian": 69.974,
+    "motionAvg": 32.447
+   }
+  },
+  {
+   "id": "yHyfj5QLgcs",
+   "group": "3mt",
+   "durationSec": 173.012,
+   "summary": {
+    "words": 429,
+    "speechSec": 122,
+    "spanSec": 167.34,
+    "voicedSec": 94.14,
+    "pauses": 44,
+    "pauseAvg": 0.78,
+    "pauseMax": 1.66,
+    "wpm": 153.819,
+    "articWpm": 210.984,
+    "medianPitch": 250.504,
+    "rangeSt": 10.65,
+    "segSdSt": 1.578,
+    "finals": {
+     "falling": 5,
+     "flat": 0,
+     "rising": 9
+    },
+    "fillers": 5,
+    "fillerRate": 1.166,
+    "longest": 8.62,
+    "segments": 44
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 380.848,
+    "lumaMedian": 94.45,
+    "motionAvg": 36.34
+   }
+  },
+  {
+   "id": "jobs_stanford",
+   "group": "other",
+   "durationSec": 120.001,
+   "summary": {
+    "words": 298,
+    "speechSec": 76.66,
+    "spanSec": 119.88,
+    "voicedSec": 54.04,
+    "pauses": 36,
+    "pauseAvg": 1.069,
+    "pauseMax": 2.04,
+    "wpm": 149.149,
+    "articWpm": 233.238,
+    "medianPitch": 164.841,
+    "rangeSt": 11.517,
+    "segSdSt": 3.209,
+    "finals": {
+     "falling": 4,
+     "flat": 0,
+     "rising": 6
+    },
+    "fillers": 3,
+    "fillerRate": 1.007,
+    "longest": 8.08,
+    "segments": 35
+   },
+   "video": {
+    "width": 320,
+    "height": 240,
+    "bitrateKbps": 178.247,
+    "lumaMedian": 105.307,
+    "motionAvg": 22.15
+   }
+  },
+  {
+   "id": "student_michael",
+   "group": "other",
+   "durationSec": 120.001,
+   "summary": {
+    "words": 444,
+    "speechSec": 95.52,
+    "spanSec": 111.661,
+    "voicedSec": 62.26,
+    "pauses": 14,
+    "pauseAvg": 0.607,
+    "pauseMax": 0.84,
+    "wpm": 238.58,
+    "articWpm": 278.894,
+    "medianPitch": 84.776,
+    "rangeSt": 8.007,
+    "segSdSt": 1.027,
+    "finals": {
+     "falling": 2,
+     "flat": 1,
+     "rising": 5
+    },
+    "fillers": 15,
+    "fillerRate": 3.378,
+    "longest": 13.08,
+    "segments": 15
+   },
+   "video": {
+    "width": 1280,
+    "height": 720,
+    "bitrateKbps": 1167.261,
+    "lumaMedian": 152.725,
+    "motionAvg": 13.711
+   }
+  },
+  {
+   "id": "talkcamera",
+   "group": "other",
+   "durationSec": 120.016,
+   "summary": {
+    "words": 414,
+    "speechSec": 79.06,
+    "spanSec": 118.9,
+    "voicedSec": 88.08,
+    "pauses": 11,
+    "pauseAvg": 0.725,
+    "pauseMax": 1.22,
+    "wpm": 208.915,
+    "articWpm": 314.192,
+    "medianPitch": 106.827,
+    "rangeSt": 12.101,
+    "segSdSt": 1.78,
+    "finals": {
+     "falling": 10,
+     "flat": 0,
+     "rising": 5
+    },
+    "fillers": 9,
+    "fillerRate": 2.174,
+    "longest": 15.24,
+    "segments": 15
+   },
+   "video": {
+    "width": 1280,
+    "height": 720,
+    "bitrateKbps": 644.972,
+    "lumaMedian": 112.89,
+    "motionAvg": 11.968
+   }
+  },
+  {
+   "id": "watson_speech",
+   "group": "other",
+   "durationSec": 120.001,
+   "summary": {
+    "words": 185,
+    "speechSec": 59.68,
+    "spanSec": 98.2,
+    "voicedSec": 40.48,
+    "pauses": 32,
+    "pauseAvg": 1.188,
+    "pauseMax": 2.74,
+    "wpm": 113.035,
+    "articWpm": 185.992,
+    "medianPitch": 257.258,
+    "rangeSt": 11.324,
+    "segSdSt": 1.277,
+    "finals": {
+     "falling": 7,
+     "flat": 1,
+     "rising": 10
+    },
+    "fillers": 1,
+    "fillerRate": 0.541,
+    "longest": 6.72,
+    "segments": 32
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 252.3,
+    "lumaMedian": 63.601,
+    "motionAvg": 12.823
+   }
+  },
+  {
+   "id": "watson_un",
+   "group": "other",
+   "durationSec": 120.009,
+   "summary": {
+    "words": 217,
+    "speechSec": 80.06,
+    "spanSec": 119.529,
+    "voicedSec": 51.24,
+    "pauses": 30,
+    "pauseAvg": 1.326,
+    "pauseMax": 5.06,
+    "wpm": 108.928,
+    "articWpm": 162.628,
+    "medianPitch": 248.895,
+    "rangeSt": 21.684,
+    "segSdSt": 3.194,
+    "finals": {
+     "falling": 5,
+     "flat": 2,
+     "rising": 5
+    },
+    "fillers": 2,
+    "fillerRate": 0.922,
+    "longest": 12.94,
+    "segments": 29
+   },
+   "video": {
+    "width": 640,
+    "height": 360,
+    "bitrateKbps": 247.391,
+    "lumaMedian": 63.101,
+    "motionAvg": 18.957
+   }
+  },
+  {
+   "id": "zoom_lecture",
+   "group": "other",
+   "durationSec": 120.004,
+   "summary": {
+    "words": 289,
+    "speechSec": 98.86,
+    "spanSec": 118.52,
+    "voicedSec": 74.32,
+    "pauses": 13,
+    "pauseAvg": 0.702,
+    "pauseMax": 1.14,
+    "wpm": 146.304,
+    "articWpm": 175.4,
+    "medianPitch": 209.621,
+    "rangeSt": 16.036,
+    "segSdSt": 4.275,
+    "finals": {
+     "falling": 4,
+     "flat": 1,
+     "rising": 7
+    },
+    "fillers": 16,
+    "fillerRate": 5.536,
+    "longest": 14.74,
+    "segments": 14
+   },
+   "video": {
+    "width": 1280,
+    "height": 720,
+    "bitrateKbps": 277.043,
+    "lumaMedian": 242.514,
+    "motionAvg": 1.441
+   }
+  }
+ ]
+}

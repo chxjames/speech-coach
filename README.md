@@ -87,10 +87,14 @@ The agent calls `analyze_speech` and receives the same Markdown report the web p
 | `lang` | `en` | language of the report: `en` or `zh` |
 | `content` | 72 | your own 0–100 score for content and structure |
 | `composition` | 50 | your own 0–100 score for framing and lighting |
-| `model` | `whisper-small.en` | any Whisper id Transformers.js can load. The targets are calibrated with `small.en`; `base.en` is ~3× faster but its rates come out higher |
-| `speechLang` | — | language spoken in the recording (e.g. `zh`), needed with a multilingual model such as `whisper-small` |
+| `model` | `whisper-large-v3-turbo` | any Whisper id Transformers.js can load with word timestamps. The default is what the targets are calibrated with and the most accurate tested (3.6 % vs 6.4 % word error rate for `small.en`); `small.en` is ~1.5× faster and usually within 1–3 points |
+| `speechLang` | `english` | language spoken in the recording (e.g. `zh`) for multilingual models such as the default |
 
-The first run downloads the Whisper weights (~250 MB for `small.en`) into the npm cache; later runs reuse them.
+The first run downloads the Whisper weights (~1.1 GB for large-v3-turbo) into the cache; later runs reuse them.
+
+The web page uses `small.en` instead: it runs four workers, each holding its own copy of the model, and four copies of
+large-v3-turbo do not fit in a browser. Its reports say which model was used; on the 18 reference samples its totals
+differ from the reference model by a median of 1 point (90 % within 3).
 
 ## What it measures
 

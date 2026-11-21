@@ -61,13 +61,13 @@ test('weights sum to 100 for every format and scene', () => {
 
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
 
-test('stage contest targets keep the stage base (en-1.0: the 3MT winner medians)', () => {
+test('stage contest targets keep the stage base (en-1.1: the 3MT winner medians)', () => {
   const t = mcp.targetsFor('stage', 'contest', 'solid');
   near(t.rate[0], 160);
   near(t.pause[0], 0.83);
   near(t.longMax, 14);
   near(t.range[0], 11.5);
-  near(t.sd[0], 1.9);
+  near(t.sd[0], 1.7);
   near(t.artic[0], 195);
   near(t.filler[0], 1.5);
   near(t.motion, 8);
@@ -79,7 +79,7 @@ test('desk contest targets keep the desk base', () => {
   near(t.pause[0], 0.59);
   near(t.longMax, 12);
   near(t.range[0], 9.0);
-  near(t.sd[0], 1.6);
+  near(t.sd[0], 1.4);
   near(t.artic[0], 210);
   near(t.motion, 4);
 });

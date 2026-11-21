@@ -6,25 +6,26 @@
 //   level  —— 水平：入门/进阶/专业。决定宽容度（sigma 倍数）和少量目标偏移。
 //   manual —— 人工：内容/构图自评。它不是测量，页面和报告都要说清楚。
 //
-// 目标值 en-1.0：stage 用本引擎 + small.en 重新量了 12 个 3MT 获奖者，
+// 目标值 en-1.1：stage 用本引擎 + large-v3-turbo 重新量了 12 个 3MT 获奖者，
 // stage + contest + solid 的目标 = 获奖者中位数（去掉 2 个静音测不准的）。
 // desk 没有带标签的样本，只按同样的引擎偏差平移，仍是 provisional。
 // 没有测到的维度返回 got: null，不按满分算。
 
 // 评分标准的版本。改了公式、权重或目标值就要升版本，并重新生成 golden 测试数据
 // （mcp/test/fixtures/golden-scores.json）。不同版本的分数不能直接比。
-export const RUBRIC_VERSION = 'en-1.0';
+export const RUBRIC_VERSION = 'en-1.1';
 
-// 目标值是用这个模型量出来的。换模型（尤其是 base.en / tiny.en）词数和语速会系统性偏高，
-// 分数只能和同一模型的结果比。
-export const REFERENCE_MODEL = 'Xenova/whisper-small.en';
+// 目标值是用这个模型量出来的。en-1.1 起用 large-v3-turbo：和 large-v3 参考转写的词错率约 3.6%，
+// small.en q8 是 6.4%（见 SCORING.md 第三节）。必须用带 _timestamped 的导出，普通导出拿不到词级时间戳。
+// 换模型时分数只能和同一模型的结果比。
+export const REFERENCE_MODEL = 'onnx-community/whisper-large-v3-turbo_timestamped';
 
 export const FORMATS = {
   desk: {
     weights: { content: 25, pacing: 20, prosody: 15, clarity: 15, body: 5, production: 20 },
     targets: {
       rate: [175, 40], pause: [0.64, 0.80], longMax: 13,
-      range: [9.5, 3.5], sd: [1.7, 1.3], riseTol: 0.70,
+      range: [9.5, 3.5], sd: [1.5, 1.3], riseTol: 0.55,
       artic: [205, 60], filler: [1.5, 1.8], motion: 4,
     },
   },
@@ -32,7 +33,7 @@ export const FORMATS = {
     weights: { content: 25, pacing: 20, prosody: 20, clarity: 15, body: 15, production: 5 },
     targets: {
       rate: [155, 45], pause: [0.98, 1.0], longMax: 15,
-      range: [12.0, 4.0], sd: [2.0, 1.5], riseTol: 0.65,
+      range: [12.0, 4.0], sd: [1.8, 1.5], riseTol: 0.50,
       artic: [190, 65], filler: [1.5, 2.0], motion: 8,
     },
   },
